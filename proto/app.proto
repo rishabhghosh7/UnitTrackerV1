@@ -14,7 +14,7 @@
 
 syntax = "proto3";
 
-option go_package="rg/UnitTracker/pkg/proto";
+option go_package="proto/appPb";
 
 package proto;
 // The greeting service definition.

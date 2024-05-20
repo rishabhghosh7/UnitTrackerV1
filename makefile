@@ -1,5 +1,5 @@
 PROTO_SRC := ./proto
-PROTO_OUT := ./pkg/proto
+PROTO_OUT := ./pkg/
 GO_MAIN := ./cmd/UnitTracker/main.go
 GO_OUT := ./bin
 
