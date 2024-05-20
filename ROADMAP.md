@@ -1,5 +1,11 @@
 May 19, 2024
 
+
+- Collaborative efforts to be sorted:
+    - Branching strategy
+    - Branch naming strategy
+    - Commenting convention
+
 - [ ] Setup GPRC + Sqlite + Migrations
     - [ ] GRPC
     - [ ] Sqlite
