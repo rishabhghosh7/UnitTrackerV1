@@ -34,6 +34,18 @@ message HelloRequest {
   string name = 1;
 }
 
+message Project {
+  string ProjectId 
+  string Name 
+  string Date 
+  string Type 
+}
+
+message Unit {
+  string ProjectId 
+  string CreateTs 
+}
+
 // The response message containing the greetings
 message HelloReply {
   string message = 1;
