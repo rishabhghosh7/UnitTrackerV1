@@ -35,15 +35,15 @@ message HelloRequest {
 }
 
 message Project {
-  string ProjectId 
-  string Name 
-  string Date 
-  string Type 
+  string ProjectId =1;
+  string Name =2;
+  string Date =3;
+  string Type =4;
 }
 
 message Unit {
-  string ProjectId 
-  string CreateTs 
+  string ProjectId =1;
+  string CreateTs =2;
 }
 
 // The response message containing the greetings
