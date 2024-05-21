@@ -1,18 +1,13 @@
 # This is responsible for the following:
-# 	- compiling golang packages only if changed
-# 	- compiling proto only if changed
+# 	- compiling golang packages 
+# 	- compiling proto files
 #
-#	Examples,
+#	TODOS
+#	1. Pkg/proto 
+#		- to not exist
+#		- input and output both in ./proto/
+#	2. 
 #	
-#
-#
-#
-#
-#
-#
-#
-#
-#
 #
 
 PROTO_SRC := ./proto
@@ -37,7 +32,7 @@ tools:
 
 # Compiling protobuf files
 .PHONY: proto
-proto: 
+proto:
 	mkdir -p $(PROTO_OUT)
 	$(PROTOC) --proto_path=$(PROTO_SRC) --go_out=$(PROTO_OUT) --go-grpc_out=$(PROTO_OUT) \
 		--go_opt=paths=source_relative --go-grpc_opt=paths=source_relative $(PROTO_SRC)/*.proto

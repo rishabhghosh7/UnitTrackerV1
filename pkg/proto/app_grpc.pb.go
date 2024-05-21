@@ -34,7 +34,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Greeter_SayHello_FullMethodName      = "/proto.Greeter/SayHello"
-	Greeter_SayHelloAgain_FullMethodName = "/proto.Greeter/SayHelloAgain"
+	Greeter_CreateProject_FullMethodName = "/proto.Greeter/CreateProject"
 )
 
 // GreeterClient is the client API for Greeter service.
@@ -43,7 +43,8 @@ const (
 type GreeterClient interface {
 	// Sends a greeting
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error)
-	SayHelloAgain(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error)
+	// Creates a new project
+	CreateProject(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error)
 }
 
 type greeterClient struct {
@@ -63,9 +64,9 @@ func (c *greeterClient) SayHello(ctx context.Context, in *HelloRequest, opts ...
 	return out, nil
 }
 
-func (c *greeterClient) SayHelloAgain(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error) {
-	out := new(HelloReply)
-	err := c.cc.Invoke(ctx, Greeter_SayHelloAgain_FullMethodName, in, out, opts...)
+func (c *greeterClient) CreateProject(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
+	out := new(Project)
+	err := c.cc.Invoke(ctx, Greeter_CreateProject_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,8 @@ func (c *greeterClient) SayHelloAgain(ctx context.Context, in *HelloRequest, opt
 type GreeterServer interface {
 	// Sends a greeting
 	SayHello(context.Context, *HelloRequest) (*HelloReply, error)
-	SayHelloAgain(context.Context, *HelloRequest) (*HelloReply, error)
+	// Creates a new project
+	CreateProject(context.Context, *Project) (*Project, error)
 	mustEmbedUnimplementedGreeterServer()
 }
 
@@ -89,8 +91,8 @@ type UnimplementedGreeterServer struct {
 func (UnimplementedGreeterServer) SayHello(context.Context, *HelloRequest) (*HelloReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
 }
-func (UnimplementedGreeterServer) SayHelloAgain(context.Context, *HelloRequest) (*HelloReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SayHelloAgain not implemented")
+func (UnimplementedGreeterServer) CreateProject(context.Context, *Project) (*Project, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
 }
 func (UnimplementedGreeterServer) mustEmbedUnimplementedGreeterServer() {}
 
@@ -123,20 +125,20 @@ func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Greeter_SayHelloAgain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
+func _Greeter_CreateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Project)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GreeterServer).SayHelloAgain(ctx, in)
+		return srv.(GreeterServer).CreateProject(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Greeter_SayHelloAgain_FullMethodName,
+		FullMethod: Greeter_CreateProject_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GreeterServer).SayHelloAgain(ctx, req.(*HelloRequest))
+		return srv.(GreeterServer).CreateProject(ctx, req.(*Project))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -153,8 +155,8 @@ var Greeter_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Greeter_SayHello_Handler,
 		},
 		{
-			MethodName: "SayHelloAgain",
-			Handler:    _Greeter_SayHelloAgain_Handler,
+			MethodName: "CreateProject",
+			Handler:    _Greeter_CreateProject_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
