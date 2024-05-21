@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"rg/UnitTracker/pkg/proto"
+	"rg/UnitTracker/store"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -49,6 +50,11 @@ func main() {
 	log.Println("Hello from UT")
 
    go sampleClientCall()
+
+   _, err := store.NewDbConnectionGetter().GetDb()
+	if err != nil {
+		log.Fatalf("failed to get db: %v", err)
+	}
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
