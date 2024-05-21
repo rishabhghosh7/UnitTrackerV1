@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net"
@@ -46,15 +47,58 @@ func sampleClientCall() {
 	log.Printf("Greeting: %s", r.GetMessage())
 }
 
+type Project struct {
+	ID   int
+	Name string
+	Desc string
+}
+
+func (p *Project) String() string {
+   if p == nil {
+      return ""
+   }
+   return fmt.Sprintf("%d\t %s\t %s\n", p.ID, p.Name, p.Desc)
+}
+
+func getProjects(db *sql.DB) ([]Project, error) {
+	rows, err := db.Query("SELECT id, name, desc FROM Project")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var projects []Project
+	for rows.Next() {
+		var project Project
+		if err := rows.Scan(&project.ID, &project.Name, &project.Desc); err != nil {
+			return nil, err
+		}
+		projects = append(projects, project)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return projects, nil
+}
+
 func main() {
 	log.Println("Hello from UT")
 
-   go sampleClientCall()
+	go sampleClientCall()
 
-   _, err := store.NewDbConnectionGetter().GetDb()
+	db, err := store.NewDbConnectionGetter().GetDb()
 	if err != nil {
 		log.Fatalf("failed to get db: %v", err)
 	}
+
+   projects, err := getProjects(db)
+	if err != nil {
+		log.Fatalf("failed to get projects: %v", err)
+	}
+   for _, prj := range projects {
+      fmt.Println(prj.String())
+   }
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
