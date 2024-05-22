@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"net"
@@ -10,6 +9,7 @@ import (
 
 	"rg/UnitTracker/pkg/proto"
 	"rg/UnitTracker/store"
+	"rg/UnitTracker/store/sqlite"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,7 +18,7 @@ import (
 const port = 50051
 
 type serverImpl struct {
-   db *sql.DB
+	db store.Store
 	proto.UnimplementedGreeterServer
 }
 
@@ -28,13 +28,12 @@ func (s *serverImpl) SayHello(ctx context.Context, in *proto.HelloRequest) (*pro
 	return &proto.HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
+func (s *serverImpl) GetProject(ctx context.Context, in *proto.Project) (*proto.Project, error) {
+	return nil, nil
+}
+
 func (s *serverImpl) CreateProject(ctx context.Context, in *proto.Project) (*proto.Project, error) {
-   err := createProject(s.db, (*Project)(in))
-   if err != nil {
-      return in, nil
-   }
-   log.Printf("Creating project: %s", in.String())
-   return nil, err
+	return nil, nil
 }
 
 func sampleClientCall() {
@@ -56,8 +55,8 @@ func sampleClientCall() {
 	}
 	log.Printf("Greeting: %s", r.GetMessage())
 
-   c.CreateProject(context.TODO(), &proto.Project{Name: "Created Project", Description: "Project desc"})
-   c.CreateProject(context.TODO(), &proto.Project{Name: "Another Project", Description: "Project desc"})
+	c.CreateProject(context.TODO(), &proto.Project{Name: "Created Project", Description: "Project desc"})
+	c.CreateProject(context.TODO(), &proto.Project{Name: "Another Project", Description: "Project desc"})
 
 }
 
@@ -70,52 +69,31 @@ func (p *Project) String() string {
 	return fmt.Sprintf("%d\t %s\t %s\n", p.Id, p.Name, p.Description)
 }
 
-// createProject inserts a new project into the Project table.
-func createProject(db *sql.DB, project *Project) error {
-	query := "INSERT INTO Project (name, desc) VALUES (?, ?)"
-	_, err := db.Exec(query, project.Name, project.Description)
-	return err
-}
-
-func getProjects(db *sql.DB) ([]*Project, error) {
-	rows, err := db.Query("SELECT id, name, desc FROM Project")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var projects []*Project
-	for rows.Next() {
-		var project Project
-		if err := rows.Scan(&project.Id, &project.Name, &project.Description); err != nil {
-			return nil, err
-		}
-		projects = append(projects, &project)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return projects, nil
-}
-
 func main() {
 	log.Println("Hello from UT")
 
-	go sampleClientCall()
 
-	db, err := store.NewDbConnectionGetter().GetDb()
+   runServer()
+}
+
+func runServer() {
+	ctx := context.TODO()
+   // get store
+	store, err := sqlite.NewSqliteConnector().Connect(ctx)
 	if err != nil {
-		log.Fatalf("failed to get db: %v", err)
+		log.Fatalf("failed to connect to store: %v", err)
 	}
 
-	projects, err := getProjects(db)
+	projectDb := store.ProjectStore()
+	project1, err := projectDb.GetProject(ctx, 1)
 	if err != nil {
-		log.Fatalf("failed to get projects: %v", err)
+		log.Fatalf("could not get p1")
 	}
-	for _, prj := range projects {
-		fmt.Println(prj.String())
+	project2, err := projectDb.GetProject(ctx, 2)
+	if err != nil {
+		log.Fatalf("could not get p1")
 	}
+	fmt.Println("from store", project1.String(), project2.String())
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -123,10 +101,9 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	proto.RegisterGreeterServer(s, &serverImpl{db: db})
+	proto.RegisterGreeterServer(s, &serverImpl{db: store})
 	log.Printf("Listening at %v", listen.Addr())
 	if err := s.Serve(listen); err != nil {
 		log.Fatalf("failed to serve :%v", err)
 	}
-
 }
