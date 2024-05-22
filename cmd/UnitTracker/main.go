@@ -52,6 +52,37 @@ func (s *serverImpl) CreateProject(ctx context.Context, in *proto.Project) (*pro
   fmt.Println("Created new project")
 	return in, nil
 }
+func (s *serverImpl) ListProjects(ctx context.Context)([]*proto.Project, error){
+
+  projectStore := s.db.ProjectStore()
+  projects, err := projectStore.ListProjects(ctx)
+  if err != nil{
+    fmt.Println(err)
+    return nil, err
+  }
+  return projects, nil;
+}
+
+func (s *serverImpl) AddUnit(ctx context.Context, projectId int32)error{
+  unitStore:=s.db.UnitStore()
+  unit:=&proto.Unit{CreateTs: int32(time.Now().Unix()), ProjectId: int32(projectId)}
+  err:=unitStore.AddUnitToProject(ctx, unit)
+  if err != nil{
+    fmt.Println(err)
+    return err
+  }
+  return nil
+}
+
+func (s *serverImpl) GetUnitsForProject(ctx context.Context, projectId int32)([]*proto.Unit, error){
+  unitStore:=s.db.UnitStore()
+  units, err:=unitStore.GetUnitsForProject(ctx, projectId)  
+  if err != nil{
+    fmt.Println(err)
+    return nil, err
+  }
+  return units, nil
+}
 
 func sampleClientCall() {
 	time.Sleep(1000 * time.Millisecond)
@@ -92,7 +123,7 @@ func (u *Unit) String() string {
 	if u == nil {
 		return ""
 	}
-	return fmt.Sprintf("%d\t %s\t %s\n", u.ProjectId, u.CreateTs)
+	return fmt.Sprintf("%d\t %d\t", u.ProjectId, u.CreateTs)
 }
 
 func main() {
@@ -101,30 +132,6 @@ func main() {
 	runServer()
 }
 
-func unitMethods(ctx context.Context,store store.Store){
-  
-  unitDb := store.UnitStore()
-
-  var i int32
-  for{
-    unit:=&proto.Unit{ProjectId: 3, CreateTs: int32(time.Now().Unix())}
-    err := unitDb.AddUnitToProject(ctx, unit)
-    if err != nil{
-      fmt.Println(err)
-    }
-    if i==3{
-      break
-    }
-    i++
-  }
-  
-  units, err:=unitDb.GetUnitsForProject(ctx, 3)
-  if err != nil{
-    fmt.Println(err)
-  }
-
-  fmt.Println(units)
-}
 
 func runServer() {
 	ctx := context.TODO()
@@ -134,7 +141,7 @@ func runServer() {
 		log.Fatalf("failed to connect to store: %v", err)
 	}
   
-
+   
 	projectDb := store.ProjectStore()
 	project1, err := projectDb.GetProject(ctx, 1)
 	if err != nil {
@@ -146,14 +153,6 @@ func runServer() {
 	}
 	fmt.Println("from store", project1.String(), project2.String())
   
-  projects, err:=projectDb.ListProjects(ctx)
-  if err != nil{
-    log.Println(err)
-  }
-  fmt.Println("projects for the current user: ", projects)
-
-  unitMethods(ctx, store)
-
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {

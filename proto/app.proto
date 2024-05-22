@@ -29,18 +29,22 @@ service Greeter {
   // Gets a project corresponding to a project ID
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
 
+  //@TODO Get list based protos to work
   // Gets Units for a project
-  rpc GetUnitsForProject(GetUnitsForPorjectRequest) returns (GetUnitsForPorjectResponse){}
+  //rpc GetUnitsForProject(GetUnitsForPorjectRequest) returns (GetUnitsForProjectResponse){}
 
   // Adds unit to a project
-  rpc AddUnitToProject(Unit) returns (Unit){}
+  rpc AddUnitToProject(AddUnitToProjectRequest) returns (AddUnitToProjectResponse){}
 }
 
 message GetProjectRequest { int32 id = 1; }
 message GetProjectResponse { Project project = 1; }
 
 message GetUnitsForPorjectRequest {int32 project_id = 1;}
-message GetUnitsForPorjectResponse {repeated Unit units = 1;}
+message GetUnitsForProjectResponse {repeated Unit units = 1;}
+
+message AddUnitToProjectRequest {Unit unit=1;}
+message AddUnitToProjectResponse {}
 
 // The request message containing the user's name.
 message HelloRequest { string name = 1; }

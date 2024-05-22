@@ -58,38 +58,37 @@ type unitDb struct {
 	db *sql.DB
 }
 
-//===================== UNIT METHODS ======================
-func (u *unitDb) AddUnitToProject(ctx context.Context, in *proto.Unit)(error){
-  _, err := u.db.Exec("INSERT INTO unit(project_id, create_ts) VALUES($1, $2)", in.ProjectId, in.CreateTs)  
-  if err != nil {
-    return err
-  }
-  return nil 
+// ===================== UNIT METHODS ======================
+func (u *unitDb) AddUnitToProject(ctx context.Context, in *proto.Unit) error {
+	_, err := u.db.Exec("INSERT INTO unit(project_id, create_ts) VALUES($1, $2)", in.ProjectId, in.CreateTs)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (u *unitDb) GetUnitsForProject(ctx context.Context, in int32)([]*proto.Unit, error){
-  rows, err := u.db.Query("SELECT * FROM unit WHERE project_id = $1", in)
-  if err != nil{
-    return nil, err
-  }
-  defer rows.Close()
-  units := make([]*proto.Unit, 1)
-  if !rows.Next(){
-    return nil, errors.New("No units for the given project ID")
-  }
-  for rows.Next(){
-    var unit proto.Unit
-    err := rows.Scan(&unit.ProjectId, &unit.CreateTs)
-    if err != nil{
-      return nil, err
-    }
-    units=append(units, &unit)
-  }
-  return units, nil
+func (u *unitDb) GetUnitsForProject(ctx context.Context, in int32) ([]*proto.Unit, error) {
+	rows, err := u.db.Query("SELECT * FROM unit WHERE project_id = $1", in)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	units := make([]*proto.Unit, 1)
+	if !rows.Next() {
+		return nil, errors.New("No units for the given project ID")
+	}
+	for rows.Next() {
+		var unit proto.Unit
+		err := rows.Scan(&unit.ProjectId, &unit.CreateTs)
+		if err != nil {
+			return nil, err
+		}
+		units = append(units, &unit)
+	}
+	return units, nil
 }
 
-
-//===================== PROJECT METHODS ======================
+// ===================== PROJECT METHODS ======================
 func (p *projectDb) GetProject(ctx context.Context, id int) (*proto.Project, error) {
 	rows, err := p.db.Query("SELECT id, name, desc FROM Project WHERE id = $1", id)
 	if err != nil {
@@ -112,46 +111,44 @@ func (p *projectDb) GetProject(ctx context.Context, id int) (*proto.Project, err
 
 func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (*proto.Project, error) {
 
-  name:=strings.TrimSpace(project.Name)
-  rows, err := p.db.Query("SELECT * FROM project WHERE name = $1", name)
-  if err != nil{
-    return nil, err
-  }
-  defer rows.Close()
+	name := strings.TrimSpace(project.Name)
+	rows, err := p.db.Query("SELECT * FROM project WHERE name = $1", name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-  if rows.Next(){
-    return nil, errors.New("Project with the given name exists")
-  }
+	if rows.Next() {
+		return nil, errors.New("Project with the given name exists")
+	}
 
-  desc:= strings.TrimSpace(project.Description)
-  _, err = p.db.Exec("INSERT INTO project(name, desc) VALUES($1, $2)", name, desc);
-  if err != nil{
-    return nil, err
-  }
+	desc := strings.TrimSpace(project.Description)
+	_, err = p.db.Exec("INSERT INTO project(name, desc) VALUES($1, $2)", name, desc)
+	if err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
+func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) {
+	rows, err := p.db.Query("SELECT * FROM project")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-func (p *projectDb) ListProjects(ctx context.Context)([]*proto.Project, error){
-  rows, err := p.db.Query("SELECT * FROM project")
-  if err != nil{
-    return nil, err
-  }
-  defer rows.Close()
+	projects := make([]*proto.Project, 1)
 
-  projects := make([]*proto.Project, 1)
-
-  for rows.Next(){
-    var project proto.Project
-    err := rows.Scan(&project.Id, &project.Name, &project.Description)
-    if err != nil{
-      return nil, nil
-    }
-    projects=append(projects, &project)
-  }  
-  return projects, nil
+	for rows.Next() {
+		var project proto.Project
+		err := rows.Scan(&project.Id, &project.Name, &project.Description)
+		if err != nil {
+			return nil, nil
+		}
+		projects = append(projects, &project)
+	}
+	return projects, nil
 }
-
 
 // =========================== UTIL FUNCS ===============================
 

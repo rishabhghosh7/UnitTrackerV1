@@ -15,7 +15,7 @@ type ProjectStore interface {
 type UnitStore interface {
 	//
 	GetUnitsForProject(context.Context, int32) ([]*proto.Unit, error) // preview : get this and return first 5 elements
-	AddUnitToProject(context.Context, *proto.Unit) (error) // maybe return something as ACK
+	AddUnitToProject(context.Context, *proto.Unit) error              // maybe return something as ACK
 }
 
 // Store is the main storage api exposed
