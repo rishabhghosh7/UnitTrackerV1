@@ -9,13 +9,13 @@ type ProjectStore interface {
 	//
 	CreateProject(context.Context, *proto.Project) (*proto.Project, error)
 	GetProject(context.Context, int) (*proto.Project, error)
-	// ListProjects(P, error) ([]P, error)
+	ListProjects(context.Context) ([]*proto.Project, error)
 }
 
 type UnitStore interface {
 	//
-	// GetUnitsForProject(string) ([]U, error) // preview : get this and return first 5 elements
-	// AddUnitToProject(U) (error) // maybe return something as ACK
+	GetUnitsForProject(context.Context, int32) ([]*proto.Unit, error) // preview : get this and return first 5 elements
+	AddUnitToProject(context.Context, *proto.Unit) (error) // maybe return something as ACK
 }
 
 // Store is the main storage api exposed

@@ -25,17 +25,33 @@ service Greeter {
 
   // Creates a new project
   rpc CreateProject(Project) returns (Project) {}
+
+  // Gets a project corresponding to a project ID
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
+
+  // Gets Units for a project
+  rpc GetUnitsForProject(GetUnitsForPorjectRequest) returns (GetUnitsForPorjectResponse){}
+
+  // Adds unit to a project
+  rpc AddUnitToProject(Unit) returns (Unit){}
 }
 
 message GetProjectRequest { int32 id = 1; }
 message GetProjectResponse { Project project = 1; }
+
+message GetUnitsForPorjectRequest {int32 project_id = 1;}
+message GetUnitsForPorjectResponse {repeated Unit units = 1;}
 
 // The request message containing the user's name.
 message HelloRequest { string name = 1; }
 
 // The response message containing the greetings
 message HelloReply { string message = 1; }
+
+message Unit {
+  int32 create_ts = 1;
+  int32 project_id = 2;
+}
 
 message Project {
   int32 Id = 1;

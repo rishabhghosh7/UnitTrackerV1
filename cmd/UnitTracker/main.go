@@ -42,7 +42,15 @@ func (s *serverImpl) GetProject(ctx context.Context, in *proto.GetProjectRequest
 }
 
 func (s *serverImpl) CreateProject(ctx context.Context, in *proto.Project) (*proto.Project, error) {
-	return nil, nil
+
+  projectStore := s.db.ProjectStore()
+  _, err := projectStore.CreateProject(ctx, in)
+  if err != nil{
+    fmt.Println(err)
+    return nil, err
+  }
+  fmt.Println("Created new project")
+	return in, nil
 }
 
 func sampleClientCall() {
@@ -71,6 +79,8 @@ func sampleClientCall() {
 
 type Project proto.Project
 
+type Unit proto.Unit
+
 func (p *Project) String() string {
 	if p == nil {
 		return ""
@@ -78,10 +88,42 @@ func (p *Project) String() string {
 	return fmt.Sprintf("%d\t %s\t %s\n", p.Id, p.Name, p.Description)
 }
 
+func (u *Unit) String() string {
+	if u == nil {
+		return ""
+	}
+	return fmt.Sprintf("%d\t %s\t %s\n", u.ProjectId, u.CreateTs)
+}
+
 func main() {
 	log.Println("Hello from UT")
 
 	runServer()
+}
+
+func unitMethods(ctx context.Context,store store.Store){
+  
+  unitDb := store.UnitStore()
+
+  var i int32
+  for{
+    unit:=&proto.Unit{ProjectId: 3, CreateTs: int32(time.Now().Unix())}
+    err := unitDb.AddUnitToProject(ctx, unit)
+    if err != nil{
+      fmt.Println(err)
+    }
+    if i==3{
+      break
+    }
+    i++
+  }
+  
+  units, err:=unitDb.GetUnitsForProject(ctx, 3)
+  if err != nil{
+    fmt.Println(err)
+  }
+
+  fmt.Println(units)
 }
 
 func runServer() {
@@ -91,6 +133,7 @@ func runServer() {
 	if err != nil {
 		log.Fatalf("failed to connect to store: %v", err)
 	}
+  
 
 	projectDb := store.ProjectStore()
 	project1, err := projectDb.GetProject(ctx, 1)
@@ -102,6 +145,14 @@ func runServer() {
 		log.Fatalf("could not get p1")
 	}
 	fmt.Println("from store", project1.String(), project2.String())
+  
+  projects, err:=projectDb.ListProjects(ctx)
+  if err != nil{
+    log.Println(err)
+  }
+  fmt.Println("projects for the current user: ", projects)
+
+  unitMethods(ctx, store)
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
