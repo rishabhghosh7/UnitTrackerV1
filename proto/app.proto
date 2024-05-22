@@ -28,19 +28,14 @@ service Greeter {
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
 }
 
+message GetProjectRequest { int32 id = 1; }
+message GetProjectResponse { Project project = 1; }
+
 // The request message containing the user's name.
 message HelloRequest { string name = 1; }
 
 // The response message containing the greetings
 message HelloReply { string message = 1; }
-
-message GetProjectRequest {
-  int32 Id = 1;
-}
-
-message GetProjectResponse {
-  Project project = 1;
-}
 
 message Project {
   int32 Id = 1;

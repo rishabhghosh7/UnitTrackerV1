@@ -1,22 +1,29 @@
 package store
 
+import (
+	"context"
+	"rg/UnitTracker/pkg/proto"
+)
+
 type ProjectStore interface {
-	// //@TODO create project struct
-	// CreateProject(P) (string, error)
-	// GetProject(ProjectId string) (P, error)
-	// ListProjects() ([]P, error)
 	//
+	CreateProject(context.Context, *proto.Project) (*proto.Project, error)
+	GetProject(context.Context, int) (*proto.Project, error)
+	// ListProjects(P, error) ([]P, error)
 }
 
 type UnitStore interface {
-	// //@TODO create unit struct
+	//
 	// GetUnitsForProject(string) ([]U, error) // preview : get this and return first 5 elements
 	// AddUnitToProject(U) (error) // maybe return something as ACK
-	//
 }
 
-// Store is the main
+// Store is the main storage api exposed
 type Store interface {
-	ProjectStore()
-	UnitStore()
+	ProjectStore() ProjectStore
+	UnitStore() UnitStore
+}
+
+type Connecter interface {
+	Connect(context.Context) (Store, error)
 }
