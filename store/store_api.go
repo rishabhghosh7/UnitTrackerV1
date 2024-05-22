@@ -7,8 +7,8 @@ import (
 
 type ProjectStore interface {
 	//
-   CreateProject(context.Context, *proto.Project) (*proto.Project, error)
-	GetProject(context.Context, int ) (*proto.Project, error)
+	CreateProject(context.Context, *proto.Project) (*proto.Project, error)
+	GetProject(context.Context, int) (*proto.Project, error)
 	// ListProjects(P, error) ([]P, error)
 }
 
@@ -25,5 +25,5 @@ type Store interface {
 }
 
 type Connecter interface {
-   Connect(context.Context) (Store, error)
+	Connect(context.Context) (Store, error)
 }

@@ -72,13 +72,12 @@ func (p *Project) String() string {
 func main() {
 	log.Println("Hello from UT")
 
-
-   runServer()
+	runServer()
 }
 
 func runServer() {
 	ctx := context.TODO()
-   // get store
+	// get store
 	store, err := sqlite.NewSqliteConnector().Connect(ctx)
 	if err != nil {
 		log.Fatalf("failed to connect to store: %v", err)
