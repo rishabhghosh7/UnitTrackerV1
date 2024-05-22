@@ -1,9 +1,9 @@
 May 19, 2024
 
-- [ ] Setup GPRC + Sqlite + Migrations
+- [x] Setup GPRC + Sqlite + Migrations (May 22)
     - [x] GRPC
-    - [ ] Sqlite
-    - [ ] Migrations
+    - [x] Sqlite
+    - [x] Migrations
 - [ ] Write V1 Project / Unit Apis
     - [ ] Project APIs
     - [ ] Unit APIs

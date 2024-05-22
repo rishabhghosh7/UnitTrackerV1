@@ -28,8 +28,17 @@ func (s *serverImpl) SayHello(ctx context.Context, in *proto.HelloRequest) (*pro
 	return &proto.HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 
-func (s *serverImpl) GetProject(ctx context.Context, in *proto.Project) (*proto.Project, error) {
-	return nil, nil
+func (s *serverImpl) GetProject(ctx context.Context, in *proto.GetProjectRequest) (*proto.GetProjectResponse, error) {
+   log.Printf("Getting project for id: %d\n", in.GetId())
+
+   projectStore := s.db.ProjectStore()
+   project, err := projectStore.GetProject(ctx, int(in.GetId()))
+   if err != nil {
+      return nil, err
+   }
+
+   log.Printf("Returning project: %s \n", project.String())
+   return &proto.GetProjectResponse{Project: project}, nil
 }
 
 func (s *serverImpl) CreateProject(ctx context.Context, in *proto.Project) (*proto.Project, error) {
