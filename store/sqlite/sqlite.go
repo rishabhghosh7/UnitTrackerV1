@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const dbFilepath = "./store/sqlite/_sqlite.db"
@@ -59,16 +60,25 @@ type unitDb struct {
 }
 
 // ===================== UNIT METHODS ======================
-func (u *unitDb) AddUnitToProject(ctx context.Context, in *proto.Unit) error {
-	_, err := u.db.Exec("INSERT INTO unit(project_id, create_ts) VALUES($1, $2)", in.ProjectId, in.CreateTs)
+func (u *unitDb) AddUnit(ctx context.Context, in *proto.Unit) (*proto.Unit,error) {
+	_, err := u.db.Exec("INSERT INTO unit(project_id, created_ts, updated_ts) VALUES($1, $2, $3)", in.ProjectId, in.Metadata.CreatedTs, in.Metadata.UpdatedTs)
 	if err != nil {
-		return err
+		return nil, nil
 	}
-	return nil
+	return in, nil
 }
 
-func (u *unitDb) GetUnitsForProject(ctx context.Context, in int32) ([]*proto.Unit, error) {
-	rows, err := u.db.Query("SELECT * FROM unit WHERE project_id = $1", in)
+func (u *unitDb) GetUnits(ctx context.Context, in []int32) ([]*proto.Unit, error) {
+  if len(in)==0{
+    return nil, errors.New("No project ids in the array")
+  }
+  query:=`SELECT * FROM Unit WHERE project_id IN (`+strings.Repeat("?,", len(in))
+  query = query[:len(query)-1] + `)`
+  args := make([]interface{}, len(in))
+  for i, id := range in {
+      args[i] = id
+  }
+  rows, err := u.db.Query(query, args[:]...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,34 +89,46 @@ func (u *unitDb) GetUnitsForProject(ctx context.Context, in int32) ([]*proto.Uni
 	}
 	for rows.Next() {
 		var unit proto.Unit
-		err := rows.Scan(&unit.ProjectId, &unit.CreateTs)
+		err := rows.Scan(&unit.Id,&unit.ProjectId, &unit.Metadata.CreatedTs, &unit.Metadata.UpdatedTs)
 		if err != nil {
 			return nil, err
 		}
 		units = append(units, &unit)
 	}
-	return units, nil
+  return units, nil
 }
 
 // ===================== PROJECT METHODS ======================
-func (p *projectDb) GetProject(ctx context.Context, id int) (*proto.Project, error) {
-	rows, err := p.db.Query("SELECT id, name, desc FROM Project WHERE id = $1", id)
+func (p *projectDb) GetProject(ctx context.Context, projectIds []int32 ) ([]*proto.Project, error) {
+  if len(projectIds)==0{
+    return nil, errors.New("No project ids sent")
+  }
+  query:=`SELECT * FROM Project WHERE id IN (`+strings.Repeat("?,", len(projectIds))
+  query = query[:len(query)-1] + `)`
+  args := make([]interface{}, len(projectIds))
+  for i, id := range projectIds {
+      args[i] = id
+  }
+  rows, err := p.db.Query(query, args[:]...) 
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	project := &proto.Project{}
+  projects := make([]*proto.Project, 1)
+
 	for rows.Next() {
-		if err := rows.Scan(&project.Id, &project.Name, &project.Description); err != nil {
+    project := &proto.Project{Metadata: &proto.Metadata{}}
+		if err := rows.Scan(&project.Id, &project.Name, &project.Description, &project.Metadata.CreatedTs, &project.Metadata.UpdatedTs); err != nil {
 			return nil, err
 		}
+    projects=append(projects, project)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return project, nil
+  return projects, nil
 }
 
 func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (*proto.Project, error) {
@@ -123,7 +145,7 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 	}
 
 	desc := strings.TrimSpace(project.Description)
-	_, err = p.db.Exec("INSERT INTO project(name, desc) VALUES($1, $2)", name, desc)
+	_, err = p.db.Exec("INSERT INTO project(name, desc, created_ts, updated_ts) VALUES($1, $2, $3, $4)", name, desc, project.Metadata.CreatedTs, project.Metadata.UpdatedTs)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +153,7 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 }
 
 func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) {
+
 	rows, err := p.db.Query("SELECT * FROM project")
 	if err != nil {
 		return nil, err
@@ -141,10 +164,13 @@ func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) 
 
 	for rows.Next() {
 		var project proto.Project
-		err := rows.Scan(&project.Id, &project.Name, &project.Description)
+    var createdTsUnix int64
+    var updatedTsUnix int64
+		err := rows.Scan(&project.Id, &project.Name, &project.Description, &createdTsUnix, &updatedTsUnix)
 		if err != nil {
 			return nil, nil
 		}
+    project.Metadata.CreatedTs=timestamppb.New(createdTsUnix)
 		projects = append(projects, &project)
 	}
 	return projects, nil
@@ -168,7 +194,6 @@ func initDb(ctx context.Context) (*sql.DB, error) {
 	if err = goose.SetDialect("sqlite3"); err != nil {
 		return nil, fmt.Errorf("failed to set goose dialect: %v", err)
 	}
-
 	// run migrations
 	return migrateDb(ctx, db, migrationDir)
 }
