@@ -33,10 +33,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Greeter_SayHello_FullMethodName         = "/proto.Greeter/SayHello"
-	Greeter_CreateProject_FullMethodName    = "/proto.Greeter/CreateProject"
-	Greeter_GetProject_FullMethodName       = "/proto.Greeter/GetProject"
-	Greeter_AddUnitToProject_FullMethodName = "/proto.Greeter/AddUnitToProject"
+	Greeter_SayHello_FullMethodName      = "/proto.Greeter/SayHello"
+	Greeter_CreateProject_FullMethodName = "/proto.Greeter/CreateProject"
+	Greeter_GetProject_FullMethodName    = "/proto.Greeter/GetProject"
+	Greeter_ListProjects_FullMethodName  = "/proto.Greeter/ListProjects"
+	Greeter_GetUnits_FullMethodName      = "/proto.Greeter/GetUnits"
+	Greeter_AddUnit_FullMethodName       = "/proto.Greeter/AddUnit"
 )
 
 // GreeterClient is the client API for Greeter service.
@@ -46,11 +48,15 @@ type GreeterClient interface {
 	// Sends a greeting
 	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error)
 	// Creates a new project
-	CreateProject(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error)
+	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
 	// Gets a project corresponding to a project ID
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// List Projects for user
+	ListProjects(ctx context.Context, in *ListProjectRequest, opts ...grpc.CallOption) (*ListProjectResponse, error)
+	// Gets Units for a project
+	GetUnits(ctx context.Context, in *GetUnitsRequest, opts ...grpc.CallOption) (*GetUnitsResponse, error)
 	// Adds unit to a project
-	AddUnitToProject(ctx context.Context, in *AddUnitToProjectRequest, opts ...grpc.CallOption) (*AddUnitToProjectResponse, error)
+	AddUnit(ctx context.Context, in *AddUnitRequest, opts ...grpc.CallOption) (*AddUnitResponse, error)
 }
 
 type greeterClient struct {
@@ -70,8 +76,8 @@ func (c *greeterClient) SayHello(ctx context.Context, in *HelloRequest, opts ...
 	return out, nil
 }
 
-func (c *greeterClient) CreateProject(ctx context.Context, in *Project, opts ...grpc.CallOption) (*Project, error) {
-	out := new(Project)
+func (c *greeterClient) CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error) {
+	out := new(CreateProjectResponse)
 	err := c.cc.Invoke(ctx, Greeter_CreateProject_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -88,9 +94,27 @@ func (c *greeterClient) GetProject(ctx context.Context, in *GetProjectRequest, o
 	return out, nil
 }
 
-func (c *greeterClient) AddUnitToProject(ctx context.Context, in *AddUnitToProjectRequest, opts ...grpc.CallOption) (*AddUnitToProjectResponse, error) {
-	out := new(AddUnitToProjectResponse)
-	err := c.cc.Invoke(ctx, Greeter_AddUnitToProject_FullMethodName, in, out, opts...)
+func (c *greeterClient) ListProjects(ctx context.Context, in *ListProjectRequest, opts ...grpc.CallOption) (*ListProjectResponse, error) {
+	out := new(ListProjectResponse)
+	err := c.cc.Invoke(ctx, Greeter_ListProjects_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *greeterClient) GetUnits(ctx context.Context, in *GetUnitsRequest, opts ...grpc.CallOption) (*GetUnitsResponse, error) {
+	out := new(GetUnitsResponse)
+	err := c.cc.Invoke(ctx, Greeter_GetUnits_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *greeterClient) AddUnit(ctx context.Context, in *AddUnitRequest, opts ...grpc.CallOption) (*AddUnitResponse, error) {
+	out := new(AddUnitResponse)
+	err := c.cc.Invoke(ctx, Greeter_AddUnit_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -104,11 +128,15 @@ type GreeterServer interface {
 	// Sends a greeting
 	SayHello(context.Context, *HelloRequest) (*HelloReply, error)
 	// Creates a new project
-	CreateProject(context.Context, *Project) (*Project, error)
+	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
 	// Gets a project corresponding to a project ID
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// List Projects for user
+	ListProjects(context.Context, *ListProjectRequest) (*ListProjectResponse, error)
+	// Gets Units for a project
+	GetUnits(context.Context, *GetUnitsRequest) (*GetUnitsResponse, error)
 	// Adds unit to a project
-	AddUnitToProject(context.Context, *AddUnitToProjectRequest) (*AddUnitToProjectResponse, error)
+	AddUnit(context.Context, *AddUnitRequest) (*AddUnitResponse, error)
 	mustEmbedUnimplementedGreeterServer()
 }
 
@@ -119,14 +147,20 @@ type UnimplementedGreeterServer struct {
 func (UnimplementedGreeterServer) SayHello(context.Context, *HelloRequest) (*HelloReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
 }
-func (UnimplementedGreeterServer) CreateProject(context.Context, *Project) (*Project, error) {
+func (UnimplementedGreeterServer) CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
 }
 func (UnimplementedGreeterServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
 }
-func (UnimplementedGreeterServer) AddUnitToProject(context.Context, *AddUnitToProjectRequest) (*AddUnitToProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddUnitToProject not implemented")
+func (UnimplementedGreeterServer) ListProjects(context.Context, *ListProjectRequest) (*ListProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
+}
+func (UnimplementedGreeterServer) GetUnits(context.Context, *GetUnitsRequest) (*GetUnitsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUnits not implemented")
+}
+func (UnimplementedGreeterServer) AddUnit(context.Context, *AddUnitRequest) (*AddUnitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddUnit not implemented")
 }
 func (UnimplementedGreeterServer) mustEmbedUnimplementedGreeterServer() {}
 
@@ -160,7 +194,7 @@ func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _Greeter_CreateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Project)
+	in := new(CreateProjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -172,7 +206,7 @@ func _Greeter_CreateProject_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: Greeter_CreateProject_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GreeterServer).CreateProject(ctx, req.(*Project))
+		return srv.(GreeterServer).CreateProject(ctx, req.(*CreateProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -195,20 +229,56 @@ func _Greeter_GetProject_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Greeter_AddUnitToProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddUnitToProjectRequest)
+func _Greeter_ListProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GreeterServer).AddUnitToProject(ctx, in)
+		return srv.(GreeterServer).ListProjects(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Greeter_AddUnitToProject_FullMethodName,
+		FullMethod: Greeter_ListProjects_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GreeterServer).AddUnitToProject(ctx, req.(*AddUnitToProjectRequest))
+		return srv.(GreeterServer).ListProjects(ctx, req.(*ListProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Greeter_GetUnits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUnitsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GreeterServer).GetUnits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Greeter_GetUnits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GreeterServer).GetUnits(ctx, req.(*GetUnitsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Greeter_AddUnit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddUnitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GreeterServer).AddUnit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Greeter_AddUnit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GreeterServer).AddUnit(ctx, req.(*AddUnitRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -233,8 +303,16 @@ var Greeter_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Greeter_GetProject_Handler,
 		},
 		{
-			MethodName: "AddUnitToProject",
-			Handler:    _Greeter_AddUnitToProject_Handler,
+			MethodName: "ListProjects",
+			Handler:    _Greeter_ListProjects_Handler,
+		},
+		{
+			MethodName: "GetUnits",
+			Handler:    _Greeter_GetUnits_Handler,
+		},
+		{
+			MethodName: "AddUnit",
+			Handler:    _Greeter_AddUnit_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

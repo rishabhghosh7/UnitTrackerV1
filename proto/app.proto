@@ -16,6 +16,7 @@ syntax = "proto3";
 
 option go_package = "proto/";
 
+import "google/protobuf/timestamp.proto";
 package proto;
 
 // The greeting service definition.
@@ -24,27 +25,35 @@ service Greeter {
   rpc SayHello(HelloRequest) returns (HelloReply) {}
 
   // Creates a new project
-  rpc CreateProject(Project) returns (Project) {}
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {}
 
   // Gets a project corresponding to a project ID
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
 
-  //@TODO Get list based protos to work
+  //List Projects for user
+  rpc ListProjects(ListProjectRequest) returns (ListProjectResponse) {}
+
   // Gets Units for a project
-  //rpc GetUnitsForProject(GetUnitsForPorjectRequest) returns (GetUnitsForProjectResponse){}
+  rpc GetUnits(GetUnitsRequest) returns (GetUnitsResponse){}
 
   // Adds unit to a project
-  rpc AddUnitToProject(AddUnitToProjectRequest) returns (AddUnitToProjectResponse){}
+  rpc AddUnit(AddUnitRequest) returns (AddUnitResponse){}
 }
 
-message GetProjectRequest { int32 id = 1; }
-message GetProjectResponse { Project project = 1; }
+message CreateProjectRequest {Project project = 1;}
+message CreateProjectResponse {Project project = 1;}
 
-message GetUnitsForPorjectRequest {int32 project_id = 1;}
-message GetUnitsForProjectResponse {repeated Unit units = 1;}
+message GetProjectRequest { repeated int32 project_ids= 1; }
+message GetProjectResponse { repeated Project project = 1; }
 
-message AddUnitToProjectRequest {Unit unit=1;}
-message AddUnitToProjectResponse {}
+message ListProjectRequest {}
+message ListProjectResponse {repeated Project project = 1;}
+
+message GetUnitsRequest {repeated int32 project_ids = 1;}
+message GetUnitsResponse {repeated Unit units = 1;}
+
+message AddUnitRequest {Unit unit=1;}
+message AddUnitResponse {}
 
 // The request message containing the user's name.
 message HelloRequest { string name = 1; }
@@ -52,14 +61,20 @@ message HelloRequest { string name = 1; }
 // The response message containing the greetings
 message HelloReply { string message = 1; }
 
+message Metadata {
+  google.protobuf.Timestamp created_ts = 1;
+  google.protobuf.Timestamp updated_ts = 2;
+}
+
 message Unit {
-  int32 create_ts = 1;
-  int32 project_id = 2;
+  int32 Id = 1;
+  int32 project_id = 3;
+  Metadata metadata = 4;
 }
 
 message Project {
   int32 Id = 1;
   string Name = 2;
   string Description = 3;
-  // @TODO : Created At / Updated At TS
+  Metadata metadata = 4;
 }
