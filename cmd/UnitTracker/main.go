@@ -13,6 +13,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const port = 50051
@@ -29,20 +30,62 @@ func (s *serverImpl) SayHello(ctx context.Context, in *proto.HelloRequest) (*pro
 }
 
 func (s *serverImpl) GetProject(ctx context.Context, in *proto.GetProjectRequest) (*proto.GetProjectResponse, error) {
-   log.Printf("Getting project for id: %d\n", in.GetId())
+	log.Printf("Getting project for id(s): %d\n", in.ProjectIds)
 
-   projectStore := s.db.ProjectStore()
-   project, err := projectStore.GetProject(ctx, int(in.GetId()))
-   if err != nil {
-      return nil, err
-   }
+	projectStore := s.db.ProjectStore()
+	project, err := projectStore.GetProject(ctx, in.ProjectIds)
+	if err != nil {
+		return nil, err
+	}
 
-   log.Printf("Returning project: %s \n", project.String())
-   return &proto.GetProjectResponse{Project: project}, nil
+	log.Printf("Returning project: %s \n", project)
+	return &proto.GetProjectResponse{Project: project}, nil
 }
 
-func (s *serverImpl) CreateProject(ctx context.Context, in *proto.Project) (*proto.Project, error) {
-	return nil, nil
+func (s *serverImpl) CreateProject(ctx context.Context, in *proto.CreateProjectRequest) (*proto.CreateProjectResponse, error) {
+	log.Printf("Creating new project name %s description %s \n", in.GetProject().GetName(), in.GetProject().GetDescription())
+
+	projectStore := s.db.ProjectStore()
+	projectFromDb, err := projectStore.CreateProject(ctx, in.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Created new project: %s\n", in.String())
+	return &proto.CreateProjectResponse{Project: projectFromDb}, nil
+}
+func (s *serverImpl) ListProjects(ctx context.Context, data *proto.ListProjectRequest) (*proto.ListProjectResponse, error) {
+	log.Printf("Listing projects for user \n")
+
+	projectStore := s.db.ProjectStore()
+	projects, err := projectStore.ListProjects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Returning project(s) %d\n", len(projects))
+	return &proto.ListProjectResponse{Project: projects}, nil
+}
+
+func (s *serverImpl) AddUnit(ctx context.Context, in *proto.AddUnitRequest) (*proto.AddUnitResponse, error) {
+	log.Printf("Adding unit: %s\n", in.Unit)
+	unitStore := s.db.UnitStore()
+	_, err := unitStore.AddUnit(ctx, in.Unit)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Added unit: %s\n", in.Unit)
+	return &proto.AddUnitResponse{}, nil
+}
+
+func (s *serverImpl) GetUnits(ctx context.Context, data *proto.GetUnitsRequest) (*proto.GetUnitsResponse, error) {
+	log.Printf("Getting units for projectId(s): %d\n", data.ProjectIds)
+	unitStore := s.db.UnitStore()
+	units, err := unitStore.GetUnits(ctx, data.ProjectIds)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Units for projectId(s): %s\n", units)
+	return &proto.GetUnitsResponse{Units: units}, nil
 }
 
 func sampleClientCall() {
@@ -64,24 +107,52 @@ func sampleClientCall() {
 	}
 	log.Printf("Greeting: %s", r.GetMessage())
 
-	c.CreateProject(context.TODO(), &proto.Project{Name: "Created Project", Description: "Project desc"})
-	c.CreateProject(context.TODO(), &proto.Project{Name: "Another Project", Description: "Project desc"})
+	c.CreateProject(context.TODO(), &proto.CreateProjectRequest{Project: &proto.Project{Name: "Created Project", Description: "Project desc"}})
+	c.CreateProject(context.TODO(), &proto.CreateProjectRequest{Project: &proto.Project{Name: "Another Project", Description: "Project desc"}})
 
 }
 
 type Project proto.Project
-
-func (p *Project) String() string {
-	if p == nil {
-		return ""
-	}
-	return fmt.Sprintf("%d\t %s\t %s\n", p.Id, p.Name, p.Description)
-}
+type Unit proto.Unit
 
 func main() {
 	log.Println("Hello from UT")
 
 	runServer()
+}
+
+func unitFunction(ctx context.Context, store store.Store) {
+
+	s := &serverImpl{db: store}
+
+	var i int32
+
+	for {
+		metadata := &proto.Metadata{
+			CreatedTs: &timestamppb.Timestamp{
+				Seconds: int64(time.Now().Unix()),
+			}}
+		unit := &proto.Unit{ProjectId: i + 1, Metadata: metadata}
+		auReq := &proto.AddUnitRequest{Unit: unit}
+		_, err := s.AddUnit(ctx, auReq)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if i == 2 {
+			break
+		}
+		i++
+	}
+
+	var projectIds []int32
+	projectIds = append(projectIds, 1)
+	projectIds = append(projectIds, 2)
+	projectIds = append(projectIds, 3)
+	guReq := &proto.GetUnitsRequest{ProjectIds: projectIds}
+	_, err := s.GetUnits(ctx, guReq)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func runServer() {
@@ -93,15 +164,18 @@ func runServer() {
 	}
 
 	projectDb := store.ProjectStore()
-	project1, err := projectDb.GetProject(ctx, 1)
+	var projectIds []int32
+	projectIds = append(projectIds, 1)
+	projectIds = append(projectIds, 2)
+	projectIds = append(projectIds, 4)
+	project1, err := projectDb.GetProject(ctx, projectIds)
 	if err != nil {
+		log.Println(err)
 		log.Fatalf("could not get p1")
 	}
-	project2, err := projectDb.GetProject(ctx, 2)
-	if err != nil {
-		log.Fatalf("could not get p1")
-	}
-	fmt.Println("from store", project1.String(), project2.String())
+	fmt.Println(project1)
+
+	unitFunction(ctx, store)
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
