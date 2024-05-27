@@ -13,7 +13,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const port = 50051
@@ -62,7 +61,7 @@ func (s *serverImpl) ListProjects(ctx context.Context, data *proto.ListProjectRe
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Returning project(s) %d\n", len(projects))
+	log.Printf("Returning project(s) %v\n:", projects)
 	return &proto.ListProjectResponse{Project: projects}, nil
 }
 
@@ -124,35 +123,11 @@ func main() {
 func unitFunction(ctx context.Context, store store.Store) {
 
 	s := &serverImpl{db: store}
-
-	var i int32
-
-	for {
-		metadata := &proto.Metadata{
-			CreatedTs: &timestamppb.Timestamp{
-				Seconds: int64(time.Now().Unix()),
-			}}
-		unit := &proto.Unit{ProjectId: i + 1, Metadata: metadata}
-		auReq := &proto.AddUnitRequest{Unit: unit}
-		_, err := s.AddUnit(ctx, auReq)
-		if err != nil {
-			fmt.Println(err)
-		}
-		if i == 2 {
-			break
-		}
-		i++
-	}
-
-	var projectIds []int32
-	projectIds = append(projectIds, 1)
-	projectIds = append(projectIds, 2)
-	projectIds = append(projectIds, 3)
-	guReq := &proto.GetUnitsRequest{ProjectIds: projectIds}
-	_, err := s.GetUnits(ctx, guReq)
+	projects, err := s.ListProjects(ctx, &proto.ListProjectRequest{})
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println(projects)
 }
 
 func runServer() {
@@ -162,18 +137,6 @@ func runServer() {
 	if err != nil {
 		log.Fatalf("failed to connect to store: %v", err)
 	}
-
-	projectDb := store.ProjectStore()
-	var projectIds []int32
-	projectIds = append(projectIds, 1)
-	projectIds = append(projectIds, 2)
-	projectIds = append(projectIds, 4)
-	project1, err := projectDb.GetProject(ctx, projectIds)
-	if err != nil {
-		log.Println(err)
-		log.Fatalf("could not get p1")
-	}
-	fmt.Println(project1)
 
 	unitFunction(ctx, store)
 

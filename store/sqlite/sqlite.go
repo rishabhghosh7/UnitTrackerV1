@@ -10,9 +10,11 @@ import (
 	"rg/UnitTracker/store"
 	"rg/UnitTracker/utils/fsutils"
 	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const dbFilepath = "./store/sqlite/_sqlite.db"
@@ -160,15 +162,16 @@ func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) 
 
    var projects []*proto.Project
 	for rows.Next() {
-		var project proto.Project
+    project := &proto.Project{Metadata: &proto.Metadata{}}
 		var createdTsUnix int64
 		var updatedTsUnix int64
 		err := rows.Scan(&project.Id, &project.Name, &project.Description, &createdTsUnix, &updatedTsUnix)
 		if err != nil {
 			return nil, nil
 		}
-		// project.Metadata.CreatedTs = timestamppb.New(createdTsUnix)
-		projects = append(projects, &project)
+		project.Metadata.CreatedTs = timestamppb.New(time.Unix(createdTsUnix, 0))
+		project.Metadata.UpdatedTs = timestamppb.New(time.Unix(updatedTsUnix, 0))
+		projects = append(projects, project)
 	}
 	return projects, nil
 }
