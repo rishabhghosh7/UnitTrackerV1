@@ -20,6 +20,7 @@ import (
 
 const port = 50051
 
+/*
 func sampleClientCall() {
 	time.Sleep(1000 * time.Millisecond)
 
@@ -48,6 +49,7 @@ func sampleClientCall() {
 
 	fmt.Println(graph)
 }
+*/
 
 type Project proto.Project
 type Unit proto.Unit
@@ -56,8 +58,9 @@ func main() {
 	log.Println("Hello from UT")
 
 	runServer()
-}
 
+}
+/*
 func unitFunction(ctx context.Context, store store.Store) {
 	// s := &serverImpl{db: store}
 	//
@@ -90,6 +93,7 @@ func unitFunction(ctx context.Context, store store.Store) {
 	// 	fmt.Println(err)
 	// }
 }
+*/
 
 func runServer() {
 	ctx := context.Background()

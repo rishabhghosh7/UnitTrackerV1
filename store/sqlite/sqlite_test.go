@@ -3,15 +3,14 @@ package sqlite_test
 import (
 	"context"
 	"fmt"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/require"
+	google_proto "google.golang.org/protobuf/proto"
 	"os"
 	"rg/UnitTracker/pkg/proto"
 	"rg/UnitTracker/store"
 	"rg/UnitTracker/store/sqlite"
 	"testing"
-
-	google_proto "github.com/golang/protobuf/proto"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/stretchr/testify/require"
 )
 
 var db store.Store
