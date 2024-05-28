@@ -6,7 +6,6 @@ import (
 )
 
 type ProjectStore interface {
-	//
 	CreateProject(context.Context, *proto.Project) (*proto.Project, error)
 	GetProject(context.Context, []int32) ([]*proto.Project, error)
 	ListProjects(context.Context) ([]*proto.Project, error)

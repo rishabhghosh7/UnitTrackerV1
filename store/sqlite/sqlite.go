@@ -159,10 +159,9 @@ func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) 
 	}
 	defer rows.Close()
 
-
-   var projects []*proto.Project
+	var projects []*proto.Project
 	for rows.Next() {
-    project := &proto.Project{Metadata: &proto.Metadata{}}
+		project := &proto.Project{Metadata: &proto.Metadata{}}
 		var createdTsUnix int64
 		var updatedTsUnix int64
 		err := rows.Scan(&project.Id, &project.Name, &project.Description, &createdTsUnix, &updatedTsUnix)
