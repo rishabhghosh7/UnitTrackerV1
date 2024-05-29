@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"time"
 
 	"rg/UnitTracker/pkg/proto"
 	"rg/UnitTracker/store"
 	"rg/UnitTracker/store/sqlite"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 const port = 50051
@@ -87,29 +85,6 @@ func (s *serverImpl) GetUnits(ctx context.Context, data *proto.GetUnitsRequest) 
 	return &proto.GetUnitsResponse{Units: units}, nil
 }
 
-func sampleClientCall() {
-	time.Sleep(1000 * time.Millisecond)
-
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := proto.NewGreeterClient(conn)
-
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	r, err := c.SayHello(ctx, &proto.HelloRequest{Name: "Randy"})
-	if err != nil {
-		log.Fatalf("could not greet: %v", err)
-	}
-	log.Printf("Greeting: %s", r.GetMessage())
-
-	c.CreateProject(context.TODO(), &proto.CreateProjectRequest{Project: &proto.Project{Name: "Created Project", Description: "Project desc"}})
-	c.CreateProject(context.TODO(), &proto.CreateProjectRequest{Project: &proto.Project{Name: "Another Project", Description: "Project desc"}})
-
-}
 
 type Project proto.Project
 type Unit proto.Unit
@@ -120,14 +95,29 @@ func main() {
 	runServer()
 }
 
-func unitFunction(ctx context.Context, store store.Store) {
+func testSqliteFns(ctx context.Context, store store.Store) {
 
 	s := &serverImpl{db: store}
-	projects, err := s.ListProjects(ctx, &proto.ListProjectRequest{})
+  projectIds := make([]int32, 0)
+  projectIds = append(projectIds, 1)
+  projectIds = append(projectIds, 2)
+  projectIds = append(projectIds, 3)
+  projectIds = append(projectIds, 4)
+  projects, err := s.GetProject(ctx, &proto.GetProjectRequest{ProjectIds: projectIds})
 	if err != nil {
 		fmt.Println(err)
 	}
+  fmt.Println("==============PROJECTS=============")
 	fmt.Println(projects)
+  fmt.Println("===========================")
+
+  units, err := s.GetUnits(ctx, &proto.GetUnitsRequest{ProjectIds: projectIds})
+  if err != nil{
+    fmt.Println(err)
+  }
+  fmt.Println("==============UNITS=============")
+  fmt.Println(units)
+  fmt.Println("===========================")
 }
 
 func runServer() {
@@ -138,7 +128,7 @@ func runServer() {
 		log.Fatalf("failed to connect to store: %v", err)
 	}
 
-	unitFunction(ctx, store)
+	testSqliteFns(ctx, store)
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))

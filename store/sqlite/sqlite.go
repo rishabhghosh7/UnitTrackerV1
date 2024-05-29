@@ -9,6 +9,7 @@ import (
 	"rg/UnitTracker/pkg/proto"
 	"rg/UnitTracker/store"
 	"rg/UnitTracker/utils/fsutils"
+	"rg/UnitTracker/utils/timeutils"
 	"strings"
 	"time"
 
@@ -62,9 +63,11 @@ type unitDb struct {
 
 // ===================== UNIT METHODS ======================
 func (u *unitDb) AddUnit(ctx context.Context, unit *proto.Unit) (*proto.Unit, error) {
-	_, err := u.db.Exec("INSERT INTO unit(project_id, created_ts, updated_ts) VALUES($1, $2, $3)", unit.ProjectId, unit.Metadata.CreatedTs, unit.Metadata.UpdatedTs)
+  createdTs := timeutils.ProtobufTimestampToUnix(unit.Metadata.CreatedTs)
+  updatedTs := timeutils.ProtobufTimestampToUnix(unit.Metadata.UpdatedTs)
+	_, err := u.db.Exec("INSERT INTO unit(project_id, created_ts, updated_ts) VALUES($1, $2, $3)", unit.ProjectId, createdTs, updatedTs)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	return unit, nil
 }
@@ -84,17 +87,20 @@ func (u *unitDb) GetUnits(ctx context.Context, projectIds []int32) ([]*proto.Uni
 		return nil, err
 	}
 	defer rows.Close()
-	units := make([]*proto.Unit, len(projectIds))
+	units := make([]*proto.Unit, 0)
 	if !rows.Next() {
 		return nil, errors.New("No units for the given project ID")
 	}
 	for rows.Next() {
-		var unit proto.Unit
-		err := rows.Scan(&unit.Id, &unit.ProjectId, &unit.Metadata.CreatedTs, &unit.Metadata.UpdatedTs)
-		if err != nil {
+    var createdTs int64
+    var updatedTs int64
+    unit := &proto.Unit{Metadata: &proto.Metadata{}}
+		if err := rows.Scan(&unit.Id, &unit.ProjectId, &createdTs, &updatedTs); err != nil {
 			return nil, err
 		}
-		units = append(units, &unit)
+    unit.Metadata.CreatedTs=timestamppb.New(time.Unix(createdTs, 0)) 
+    unit.Metadata.UpdatedTs=timestamppb.New(time.Unix(updatedTs, 0)) 
+		units = append(units, unit)
 	}
 	return units, nil
 }
@@ -116,13 +122,17 @@ func (p *projectDb) GetProject(ctx context.Context, projectIds []int32) ([]*prot
 	}
 	defer rows.Close()
 
-	projects := make([]*proto.Project, 1)
+	projects := make([]*proto.Project, 0)
 
 	for rows.Next() {
 		project := &proto.Project{Metadata: &proto.Metadata{}}
-		if err := rows.Scan(&project.Id, &project.Name, &project.Description, &project.Metadata.CreatedTs, &project.Metadata.UpdatedTs); err != nil {
+    var createdTs int64
+    var updatedTs int64
+		if err := rows.Scan(&project.Id, &project.Name, &project.Description, &createdTs, &updatedTs); err != nil {
 			return nil, err
 		}
+    project.Metadata.CreatedTs=timestamppb.New(time.Unix(createdTs, 0))
+    project.Metadata.UpdatedTs=timestamppb.New(time.Unix(updatedTs, 0))
 		projects = append(projects, project)
 	}
 	if err := rows.Err(); err != nil {
@@ -145,7 +155,9 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 	}
 
 	desc := strings.TrimSpace(project.Description)
-	_, err = p.db.Exec("INSERT INTO project(name, desc, created_ts, updated_ts) VALUES($1, $2, $3, $4)", name, desc, project.Metadata.CreatedTs, project.Metadata.UpdatedTs)
+  createdTs := timeutils.ProtobufTimestampToUnix(project.Metadata.CreatedTs)
+  updatedTs := timeutils.ProtobufTimestampToUnix(project.Metadata.UpdatedTs)
+	_, err = p.db.Exec("INSERT INTO project(name, desc, created_ts, updated_ts) VALUES($1, $2, $3, $4)", name, desc, createdTs, updatedTs)
 	if err != nil {
 		return nil, err
 	}
