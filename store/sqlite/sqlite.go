@@ -16,6 +16,7 @@ import (
 )
 
 const dbFilepath = "./store/sqlite/_sqlite.db"
+const testDbFilepath = "./store/sqlite/_testSqlite.db"
 const migrationDir = "./store/migrations/"
 
 var dbSingleton *sql.DB
@@ -34,7 +35,7 @@ func NewSqliteConnector() store.Connecter {
 func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
 	if dbSingleton == nil {
 		var err error
-		dbSingleton, err = initDb(ctx)
+		dbSingleton, err = initDb(ctx, dbFilepath)
 		if err != nil {
 			return nil, err
 		}
@@ -175,8 +176,8 @@ func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) 
 
 // =========================== UTIL FUNCS ===============================
 
-func initDb(ctx context.Context) (*sql.DB, error) {
-	if !fsutils.FileExists(dbFilepath) {
+func initDb(ctx context.Context, dbFile string) (*sql.DB, error) {
+	if !fsutils.FileExists(dbFile) {
 		log.Printf("Db not found, creating %s...", dbFilepath)
 	}
 	db, err := sql.Open("sqlite3", dbFilepath)

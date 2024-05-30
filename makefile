@@ -15,6 +15,8 @@ PROTO_OUT := ./pkg/proto
 GO_MAIN := ./cmd/UnitTracker/main.go
 GO_OUT := ./bin
 
+SQLITE_FILE := ./store/sqlite/_sqlite.db
+
 
 # Tools
 PROTOC := protoc
@@ -24,11 +26,14 @@ PROTOC_GEN_GO_GRPC := protoc-gen-go-grpc
 # Ensuring tools are installed
 .PHONY: tools
 tools:
-	go get google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go get google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	# go get google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	# go get google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go get google.golang.org/grpc
 	go get github.com/mattn/go-sqlite3
 	go get github.com/pressly/goose/v3
+	go get github.com/guptarohit/asciigraph@latest
+	go get github.com/stretchr/testify
+	go mod tidy
 
 # Compiling protobuf files
 .PHONY: proto
@@ -54,4 +59,4 @@ run: build
 clean:
 	rm -rvf $(PROTO_OUT)
 	rm -rvf $(GO_OUT)
-	rm -rf ./store/sqlite.db
+	rm -rf $(SQLITE_FILE)

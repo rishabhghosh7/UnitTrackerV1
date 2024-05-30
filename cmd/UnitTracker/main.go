@@ -14,6 +14,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+   "github.com/guptarohit/asciigraph"
 )
 
 const port = 50051
@@ -107,9 +109,14 @@ func sampleClientCall() {
 	}
 	log.Printf("Greeting: %s", r.GetMessage())
 
-	c.CreateProject(context.TODO(), &proto.CreateProjectRequest{Project: &proto.Project{Name: "Created Project", Description: "Project desc"}})
-	c.CreateProject(context.TODO(), &proto.CreateProjectRequest{Project: &proto.Project{Name: "Another Project", Description: "Project desc"}})
+	// c.CreateProject(context.TODO(), &proto.CreateProjectRequest{Project: &proto.Project{Name: "Created Project", Description: "Project desc"}})
+	// c.CreateProject(context.TODO(), &proto.CreateProjectRequest{Project: &proto.Project{Name: "Another Project", Description: "Project desc"}})
 
+   data := []float64{3, 4, 5, 1, 2, 3, 7, 8, 9}
+   data1 := []float64{12, 12, 12, 12,12, 12, 12, 12, 12, 12}
+   graph := asciigraph.PlotMany([][]float64{data, data1})
+
+   fmt.Println(graph)
 }
 
 type Project proto.Project
@@ -163,19 +170,19 @@ func runServer() {
 		log.Fatalf("failed to connect to store: %v", err)
 	}
 
-	projectDb := store.ProjectStore()
-	var projectIds []int32
-	projectIds = append(projectIds, 1)
-	projectIds = append(projectIds, 2)
-	projectIds = append(projectIds, 4)
-	project1, err := projectDb.GetProject(ctx, projectIds)
-	if err != nil {
-		log.Println(err)
-		log.Fatalf("could not get p1")
-	}
-	fmt.Println(project1)
+   go sampleClientCall()
 
-	unitFunction(ctx, store)
+	// projectDb := store.ProjectStore()
+	// var projectIds []int32
+	// projectIds = append(projectIds, 1)
+	// projectIds = append(projectIds, 2)
+	// projectIds = append(projectIds, 4)
+	// project1, err := projectDb.GetProject(ctx, projectIds)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	log.Fatalf("could not get p1")
+	// }
+	// fmt.Println(project1)
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
