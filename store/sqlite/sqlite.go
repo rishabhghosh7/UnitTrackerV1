@@ -29,8 +29,6 @@ func NewSqliteConnector() store.Connecter {
 // @TODO
 // func RunTransaction(store, func(trancsaction) {}) error
 
-
-
 func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
 	if dbSingleton == nil {
 		var err error
@@ -49,6 +47,7 @@ func (c *sqliteConnector) ProjectStore() store.ProjectStore {
 func (c *sqliteConnector) UnitStore() store.UnitStore {
 	return &unitDb{db: c.db}
 }
+
 // =========================== UTIL FUNCS ===============================
 
 func initDb(ctx context.Context, dbFile string) (*sql.DB, error) {

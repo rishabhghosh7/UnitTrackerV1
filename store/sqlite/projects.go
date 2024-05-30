@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-
 type projectDb struct {
 	db *sql.DB
 }
@@ -72,8 +71,7 @@ func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) 
 	}
 	defer rows.Close()
 
-
-   var projects []*proto.Project
+	var projects []*proto.Project
 	for rows.Next() {
 		var project proto.Project
 		var createdTsUnix int64
@@ -87,4 +85,3 @@ func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) 
 	}
 	return projects, nil
 }
-

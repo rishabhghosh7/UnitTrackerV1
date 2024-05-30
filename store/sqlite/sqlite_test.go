@@ -10,23 +10,23 @@ import (
 )
 
 func TestProjectsCRUD(t *testing.T) {
-   db, err := sqlite.NewSqliteConnector().Connect(context.TODO()) // @TODO : testing db  
-   require.NoError(t, err)
+	db, err := sqlite.NewSqliteConnector().Connect(context.TODO()) // @TODO : testing db
+	require.NoError(t, err)
 
-   projectNoNameNoDesc := &proto.Project{}
-   projectNoName := &proto.Project{Description: "test desc"}
-   legalProject := &proto.Project{}
+	projectNoNameNoDesc := &proto.Project{}
+	projectNoName := &proto.Project{Description: "test desc"}
+	legalProject := &proto.Project{}
 
-   projectStore := db.ProjectStore()
-   _, err = projectStore.CreateProject(context.TODO(), projectNoNameNoDesc)
-   // require.ErrorIs() // @TODO : check error
-   require.Error(t, err)
+	projectStore := db.ProjectStore()
+	_, err = projectStore.CreateProject(context.TODO(), projectNoNameNoDesc)
+	// require.ErrorIs() // @TODO : check error
+	require.Error(t, err)
 
-   _, err = projectStore.CreateProject(context.TODO(), projectNoName)
-   // require.ErrorIs() // @TODO : check error
-   require.Error(t, err)
-   
-   _, err = projectStore.CreateProject(context.TODO(), legalProject)
-   // require.ErrorIs() // @TODO : check error
-   require.NoError(t, err)
+	_, err = projectStore.CreateProject(context.TODO(), projectNoName)
+	// require.ErrorIs() // @TODO : check error
+	require.Error(t, err)
+
+	_, err = projectStore.CreateProject(context.TODO(), legalProject)
+	// require.ErrorIs() // @TODO : check error
+	require.NoError(t, err)
 }

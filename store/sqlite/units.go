@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-
 type unitDb struct {
 	db *sql.DB
 }
@@ -51,4 +50,3 @@ func (u *unitDb) GetUnits(ctx context.Context, projectIds []int32) ([]*proto.Uni
 	}
 	return units, nil
 }
-
