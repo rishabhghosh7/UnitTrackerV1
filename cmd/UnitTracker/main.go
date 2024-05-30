@@ -85,7 +85,6 @@ func (s *serverImpl) GetUnits(ctx context.Context, data *proto.GetUnitsRequest) 
 	return &proto.GetUnitsResponse{Units: units}, nil
 }
 
-
 type Project proto.Project
 type Unit proto.Unit
 
@@ -98,26 +97,26 @@ func main() {
 func testSqliteFns(ctx context.Context, store store.Store) {
 
 	s := &serverImpl{db: store}
-  projectIds := make([]int32, 0)
-  projectIds = append(projectIds, 1)
-  projectIds = append(projectIds, 2)
-  projectIds = append(projectIds, 3)
-  projectIds = append(projectIds, 4)
-  projects, err := s.GetProject(ctx, &proto.GetProjectRequest{ProjectIds: projectIds})
+	projectIds := make([]int32, 0)
+	projectIds = append(projectIds, 1)
+	projectIds = append(projectIds, 2)
+	projectIds = append(projectIds, 3)
+	projectIds = append(projectIds, 4)
+	projects, err := s.GetProject(ctx, &proto.GetProjectRequest{ProjectIds: projectIds})
 	if err != nil {
 		fmt.Println(err)
 	}
-  fmt.Println("==============PROJECTS=============")
+	fmt.Println("==============PROJECTS=============")
 	fmt.Println(projects)
-  fmt.Println("===========================")
+	fmt.Println("===========================")
 
-  units, err := s.GetUnits(ctx, &proto.GetUnitsRequest{ProjectIds: projectIds})
-  if err != nil{
-    fmt.Println(err)
-  }
-  fmt.Println("==============UNITS=============")
-  fmt.Println(units)
-  fmt.Println("===========================")
+	units, err := s.GetUnits(ctx, &proto.GetUnitsRequest{ProjectIds: projectIds})
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("==============UNITS=============")
+	fmt.Println(units)
+	fmt.Println("===========================")
 }
 
 func runServer() {
