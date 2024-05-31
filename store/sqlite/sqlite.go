@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"log"
 	"rg/UnitTracker/pkg/proto"
+	"rg/UnitTracker/queries"
 	"rg/UnitTracker/store"
 	"rg/UnitTracker/utils/fsutils"
 	"rg/UnitTracker/utils/timeutils"
 	"strings"
 	"time"
-  "rg/UnitTracker/queries"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
@@ -23,9 +23,10 @@ const dbFilepath = "./store/sqlite/_sqlite.db"
 const migrationDir = "./store/migrations/"
 
 var dbSingleton *sql.DB
+
 type sqliteConnector struct {
-	db *sql.DB // never access this directly
-  queries *queries.Queries
+	db      *sql.DB // never access this directly
+	queries *queries.Queries
 }
 
 func NewSqliteConnector() store.Connecter {
@@ -36,7 +37,7 @@ func NewSqliteConnector() store.Connecter {
 // func RunTransaction(store, func(trancsaction) {}) error
 
 func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
-  var q *queries.Queries
+	var q *queries.Queries
 	if dbSingleton == nil {
 		var err error
 		dbSingleton, q, err = initDb(ctx)
@@ -51,21 +52,21 @@ func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
 }
 
 func (c *sqliteConnector) ProjectStore() store.ProjectStore {
-  return &projectDb{db: c.db, queries: c.queries}
+	return &projectDb{db: c.db, queries: c.queries}
 }
 
 type projectDb struct {
-	db *sql.DB
-  queries *queries.Queries
+	db      *sql.DB
+	queries *queries.Queries
 }
 
 func (c *sqliteConnector) UnitStore() store.UnitStore {
-  return &unitDb{db: c.db, queries: c.queries}
+	return &unitDb{db: c.db, queries: c.queries}
 }
 
 type unitDb struct {
-	db *sql.DB
-  queries *queries.Queries
+	db      *sql.DB
+	queries *queries.Queries
 }
 
 // ===================== UNIT METHODS ======================
@@ -84,42 +85,42 @@ func (u *unitDb) GetUnits(ctx context.Context, projectIds []int32) ([]*proto.Uni
 		return nil, errors.New("No project ids in the array")
 	}
 	units := make([]*proto.Unit, 0)
-  sqlcUnits, err := u.queries.GetUnits(ctx, 1)
-  if err != nil{
-    fmt.Println(err)
-  }
-  fmt.Println("sqlc units: ", sqlcUnits)
-  /*
-	query := `SELECT * FROM Unit WHERE project_id IN (` + strings.Repeat("?,", len(projectIds))
-	query = query[:len(query)-1] + `)`
-	args := make([]interface{}, len(projectIds))
-	for i, id := range projectIds {
-		args[i] = id
-	}
-	rows, err := u.db.Query(query, args[:]...)
+	sqlcUnits, err := u.queries.GetUnits(ctx, 1)
 	if err != nil {
-		return nil, err
+		fmt.Println(err)
 	}
-	defer rows.Close()
-	units := make([]*proto.Unit, 0)
-	if !rows.Next() {
-		return nil, errors.New("No units for the given project ID")
-	}
-	for rows.Next() {
-		var createdTs int64
-		var updatedTs int64
-		unit := &proto.Unit{Metadata: &proto.Metadata{}}
-		if err := rows.Scan(&unit.Id, &unit.ProjectId, &createdTs, &updatedTs); err != nil {
+	fmt.Println("sqlc units: ", sqlcUnits)
+	/*
+		query := `SELECT * FROM Unit WHERE project_id IN (` + strings.Repeat("?,", len(projectIds))
+		query = query[:len(query)-1] + `)`
+		args := make([]interface{}, len(projectIds))
+		for i, id := range projectIds {
+			args[i] = id
+		}
+		rows, err := u.db.Query(query, args[:]...)
+		if err != nil {
 			return nil, err
 		}
-		unit.Metadata.CreatedTs = timestamppb.New(time.Unix(createdTs, 0))
-		unit.Metadata.UpdatedTs = timestamppb.New(time.Unix(updatedTs, 0))
-		units = append(units, unit)
-	}
+		defer rows.Close()
+		units := make([]*proto.Unit, 0)
+		if !rows.Next() {
+			return nil, errors.New("No units for the given project ID")
+		}
+		for rows.Next() {
+			var createdTs int64
+			var updatedTs int64
+			unit := &proto.Unit{Metadata: &proto.Metadata{}}
+			if err := rows.Scan(&unit.Id, &unit.ProjectId, &createdTs, &updatedTs); err != nil {
+				return nil, err
+			}
+			unit.Metadata.CreatedTs = timestamppb.New(time.Unix(createdTs, 0))
+			unit.Metadata.UpdatedTs = timestamppb.New(time.Unix(updatedTs, 0))
+			units = append(units, unit)
+		}
+		return units, nil
+	*/
 	return units, nil
-  */
-  return units, nil
-  
+
 }
 
 // ===================== PROJECT METHODS ======================
@@ -214,9 +215,9 @@ func initDb(ctx context.Context) (*sql.DB, *queries.Queries, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open database: %v", err)
 	}
-  
-  queries := queries.New(db)
-  
+
+	queries := queries.New(db)
+
 	if err = db.Ping(); err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
@@ -226,11 +227,11 @@ func initDb(ctx context.Context) (*sql.DB, *queries.Queries, error) {
 	}
 
 	// run migrations
-  db, err = migrateDb(ctx, db, migrationDir)
-  if err != nil{
-    return nil, nil, fmt.Errorf("Failed to run migrations: %v", err)
-  }
-  return db, queries, err
+	db, err = migrateDb(ctx, db, migrationDir)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Failed to run migrations: %v", err)
+	}
+	return db, queries, err
 }
 
 func migrateDb(ctx context.Context, db *sql.DB, migrationDir string) (*sql.DB, error) {

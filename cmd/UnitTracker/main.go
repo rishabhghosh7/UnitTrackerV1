@@ -102,15 +102,15 @@ func testSqliteFns(ctx context.Context, store store.Store) {
 	projectIds = append(projectIds, 2)
 	projectIds = append(projectIds, 3)
 	projectIds = append(projectIds, 4)
-  /*
-	projects, err := s.GetProject(ctx, &proto.GetProjectRequest{ProjectIds: projectIds})
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("==============PROJECTS=============")
-	fmt.Println(projects)
-	fmt.Println("===========================")
-  */
+	/*
+		projects, err := s.GetProject(ctx, &proto.GetProjectRequest{ProjectIds: projectIds})
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("==============PROJECTS=============")
+		fmt.Println(projects)
+		fmt.Println("===========================")
+	*/
 	units, err := s.GetUnits(ctx, &proto.GetUnitsRequest{ProjectIds: projectIds})
 	if err != nil {
 		fmt.Println(err)
