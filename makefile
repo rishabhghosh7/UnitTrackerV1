@@ -29,6 +29,7 @@ tools:
 	go get google.golang.org/grpc
 	go get github.com/mattn/go-sqlite3
 	go get github.com/pressly/goose/v3
+	
 
 # Compiling protobuf files
 .PHONY: proto
