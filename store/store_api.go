@@ -7,12 +7,12 @@ import (
 
 type ProjectStore interface {
 	CreateProject(context.Context, *proto.Project) (*proto.Project, error)
-	GetProject(context.Context, []int32) ([]*proto.Project, error)
+	GetProject(context.Context, []int64) ([]*proto.Project, error)
 	ListProjects(context.Context) ([]*proto.Project, error)
 }
 
 type UnitStore interface {
-	GetUnits(context.Context, []int32) ([]*proto.Unit, error)
+	GetUnits(context.Context, []int64) ([]*proto.Unit, error)
 	AddUnit(context.Context, *proto.Unit) (*proto.Unit, error)
 }
 

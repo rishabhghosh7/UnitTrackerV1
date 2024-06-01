@@ -43,13 +43,13 @@ service Greeter {
 message CreateProjectRequest {Project project = 1;}
 message CreateProjectResponse {Project project = 1;}
 
-message GetProjectRequest { repeated int32 project_ids= 1; }
+message GetProjectRequest { repeated int64 project_ids= 1; }
 message GetProjectResponse { repeated Project project = 1; }
 
 message ListProjectRequest {}
 message ListProjectResponse {repeated Project project = 1;}
 
-message GetUnitsRequest {repeated int32 project_ids = 1;}
+message GetUnitsRequest {repeated int64 project_ids = 1;}
 message GetUnitsResponse {repeated Unit units = 1;}
 
 message AddUnitRequest {Unit unit=1;}
@@ -67,13 +67,13 @@ message Metadata {
 }
 
 message Unit {
-  int32 Id = 1;
-  int32 project_id = 3;
+  int64 Id = 1;
+  int64 project_id = 3;
   Metadata metadata = 4;
 }
 
 message Project {
-  int32 Id = 1;
+  int64 Id = 1;
   string Name = 2;
   string Description = 3;
   Metadata metadata = 4;

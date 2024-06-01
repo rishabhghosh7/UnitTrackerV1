@@ -73,61 +73,66 @@ type unitDb struct {
 func (u *unitDb) AddUnit(ctx context.Context, unit *proto.Unit) (*proto.Unit, error) {
 	createdTs := timeutils.ProtobufTimestampToUnix(unit.Metadata.CreatedTs)
 	updatedTs := timeutils.ProtobufTimestampToUnix(unit.Metadata.UpdatedTs)
-	_, err := u.db.Exec("INSERT INTO unit(project_id, created_ts, updated_ts) VALUES($1, $2, $3)", unit.ProjectId, createdTs, updatedTs)
+  
+  err := u.queries.AddUnit(ctx, queries.AddUnitParams{ProjectID: unit.ProjectId, CreatedTs: createdTs, UpdatedTs: updatedTs})
+	//_, err := u.db.Exec("INSERT INTO unit(project_id, created_ts, updated_ts) VALUES($1, $2, $3)", unit.ProjectId, createdTs, updatedTs)
 	if err != nil {
 		return nil, err
 	}
 	return unit, nil
 }
 
-func (u *unitDb) GetUnits(ctx context.Context, projectIds []int32) ([]*proto.Unit, error) {
+func (u *unitDb) GetUnits(ctx context.Context, projectIds []int64) ([]*proto.Unit, error) {
 	if len(projectIds) == 0 {
 		return nil, errors.New("No project ids in the array")
 	}
 	units := make([]*proto.Unit, 0)
-	sqlcUnits, err := u.queries.GetUnits(ctx, 1)
+	rows, err := u.queries.GetUnits(ctx, projectIds)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("sqlc units: ", sqlcUnits)
-	/*
-		query := `SELECT * FROM Unit WHERE project_id IN (` + strings.Repeat("?,", len(projectIds))
-		query = query[:len(query)-1] + `)`
-		args := make([]interface{}, len(projectIds))
-		for i, id := range projectIds {
-			args[i] = id
-		}
-		rows, err := u.db.Query(query, args[:]...)
-		if err != nil {
-			return nil, err
-		}
-		defer rows.Close()
-		units := make([]*proto.Unit, 0)
-		if !rows.Next() {
-			return nil, errors.New("No units for the given project ID")
-		}
-		for rows.Next() {
-			var createdTs int64
-			var updatedTs int64
-			unit := &proto.Unit{Metadata: &proto.Metadata{}}
-			if err := rows.Scan(&unit.Id, &unit.ProjectId, &createdTs, &updatedTs); err != nil {
-				return nil, err
-			}
-			unit.Metadata.CreatedTs = timestamppb.New(time.Unix(createdTs, 0))
-			unit.Metadata.UpdatedTs = timestamppb.New(time.Unix(updatedTs, 0))
+  for _, v := range rows{
+			unit := &proto.Unit{
+        Metadata: &proto.Metadata{
+          CreatedTs: timestamppb.New(time.Unix(v.CreatedTs, 0)),
+          UpdatedTs: timestamppb.New(time.Unix(v.UpdatedTs, 0)),
+        },
+        ProjectId: v.ProjectID,
+        Id: v.ID,
+    }
 			units = append(units, unit)
-		}
-		return units, nil
-	*/
-	return units, nil
-
+  }
+  return units, nil
 }
 
 // ===================== PROJECT METHODS ======================
-func (p *projectDb) GetProject(ctx context.Context, projectIds []int32) ([]*proto.Project, error) {
+func (p *projectDb) GetProject(ctx context.Context, projectIds []int64) ([]*proto.Project, error) {
 	if len(projectIds) == 0 {
 		return nil, errors.New("No project ids sent")
 	}
+  
+  rows, err := p.queries.GetProject(ctx, projectIds)
+  if err != nil{
+    return nil, err
+  }
+  projects := make([]*proto.Project, 0)
+  for _, v := range rows{
+      if !v.Desc.Valid{
+      v.Desc.String=""
+    }
+			project := &proto.Project{
+        Metadata: &proto.Metadata{
+          CreatedTs: timestamppb.New(time.Unix(v.CreatedTs, 0)),
+          UpdatedTs: timestamppb.New(time.Unix(v.UpdatedTs, 0)),
+        },
+        Id: v.ID,
+        Name: v.Name,
+        Description: v.Desc.String,
+    }
+			projects = append(projects, project)
+  }
+
+  /*
 	query := `SELECT * FROM Project WHERE id IN (` + strings.Repeat("?,", len(projectIds))
 	query = query[:len(query)-1] + `)`
 	args := make([]interface{}, len(projectIds))
@@ -156,12 +161,20 @@ func (p *projectDb) GetProject(ctx context.Context, projectIds []int32) ([]*prot
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
+*/
 	return projects, nil
 }
 
 func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (*proto.Project, error) {
 	name := strings.TrimSpace(project.Name)
+  rows, err := p.queries.GetProjectByName(ctx, name)
+  if err != nil{
+    return nil, err
+  }
+  //@TODO Check the log for a row that doesn't exist
+  fmt.Println(rows)
+  //@TODO write the rest of the logic
+  /*
 	rows, err := p.db.Query("SELECT * FROM project WHERE name = $1", name)
 	if err != nil {
 		return nil, err
@@ -179,10 +192,32 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 	if err != nil {
 		return nil, err
 	}
+  */
 	return nil, nil
 }
 
 func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) {
+  var projects []*proto.Project
+  rows, err := p.queries.ListProjects(ctx)
+  if err != nil {
+    return nil, err
+  }
+  for _, v := range rows {
+    if !v.Desc.Valid{
+      v.Desc.String=""
+    }
+    project := &proto.Project{
+      Description: v.Desc.String,
+      Name:v.Name,
+      Id: v.ID,
+      Metadata: &proto.Metadata{
+        CreatedTs: timestamppb.New(time.Unix(v.CreatedTs, 0)),
+        UpdatedTs: timestamppb.New(time.Unix(v.UpdatedTs, 0)),
+      },
+    }
+    projects = append(projects, project)
+  }  
+  /*
 	rows, err := p.db.Query("SELECT * FROM project")
 	if err != nil {
 		return nil, err
@@ -202,6 +237,7 @@ func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) 
 		project.Metadata.UpdatedTs = timestamppb.New(time.Unix(updatedTsUnix, 0))
 		projects = append(projects, project)
 	}
+  */
 	return projects, nil
 }
 

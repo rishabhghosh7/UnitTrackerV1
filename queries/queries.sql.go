@@ -8,6 +8,7 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 const addUnit = `-- name: AddUnit :exec
@@ -47,11 +48,21 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) er
 }
 
 const getProject = `-- name: GetProject :many
-SELECT id, name, desc, created_ts, updated_ts FROM Project WHERE id IN (?)
+SELECT id, name, desc, created_ts, updated_ts FROM Project WHERE id IN (/*SLICE:ids*/?)
 `
 
-func (q *Queries) GetProject(ctx context.Context, id int64) ([]Project, error) {
-	rows, err := q.db.QueryContext(ctx, getProject, id)
+func (q *Queries) GetProject(ctx context.Context, ids []int64) ([]Project, error) {
+	query := getProject
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,26 +90,52 @@ func (q *Queries) GetProject(ctx context.Context, id int64) ([]Project, error) {
 	return items, nil
 }
 
-const getUnits = `-- name: GetUnits :many
-SELECT project_id, created_ts, updated_ts FROM Unit WHERE project_id IN (?)
+const getProjectByName = `-- name: GetProjectByName :one
+SELECT id, name, desc, created_ts, updated_ts FROM Project WHERE name = ?
 `
 
-type GetUnitsRow struct {
-	ProjectID int64
-	CreatedTs int64
-	UpdatedTs int64
+func (q *Queries) GetProjectByName(ctx context.Context, name string) (Project, error) {
+	row := q.db.QueryRowContext(ctx, getProjectByName, name)
+	var i Project
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Desc,
+		&i.CreatedTs,
+		&i.UpdatedTs,
+	)
+	return i, err
 }
 
-func (q *Queries) GetUnits(ctx context.Context, projectID int64) ([]GetUnitsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getUnits, projectID)
+const getUnits = `-- name: GetUnits :many
+SELECT id, project_id, created_ts, updated_ts FROM Unit WHERE project_id IN (/*SLICE:project_ids*/?)
+`
+
+func (q *Queries) GetUnits(ctx context.Context, projectIds []int64) ([]Unit, error) {
+	query := getUnits
+	var queryParams []interface{}
+	if len(projectIds) > 0 {
+		for _, v := range projectIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:project_ids*/?", strings.Repeat(",?", len(projectIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:project_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetUnitsRow
+	var items []Unit
 	for rows.Next() {
-		var i GetUnitsRow
-		if err := rows.Scan(&i.ProjectID, &i.CreatedTs, &i.UpdatedTs); err != nil {
+		var i Unit
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.CreatedTs,
+			&i.UpdatedTs,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

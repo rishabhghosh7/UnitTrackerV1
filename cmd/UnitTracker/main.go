@@ -97,7 +97,7 @@ func main() {
 func testSqliteFns(ctx context.Context, store store.Store) {
 
 	s := &serverImpl{db: store}
-	projectIds := make([]int32, 0)
+	projectIds := make([]int64, 0)
 	projectIds = append(projectIds, 1)
 	projectIds = append(projectIds, 2)
 	projectIds = append(projectIds, 3)
