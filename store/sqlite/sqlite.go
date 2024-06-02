@@ -131,69 +131,26 @@ func (p *projectDb) GetProject(ctx context.Context, projectIds []int64) ([]*prot
     }
 			projects = append(projects, project)
   }
-
-  /*
-	query := `SELECT * FROM Project WHERE id IN (` + strings.Repeat("?,", len(projectIds))
-	query = query[:len(query)-1] + `)`
-	args := make([]interface{}, len(projectIds))
-	for i, id := range projectIds {
-		args[i] = id
-	}
-	rows, err := p.db.Query(query, args[:]...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	projects := make([]*proto.Project, 0)
-
-	for rows.Next() {
-		project := &proto.Project{Metadata: &proto.Metadata{}}
-		var createdTs int64
-		var updatedTs int64
-		if err := rows.Scan(&project.Id, &project.Name, &project.Description, &createdTs, &updatedTs); err != nil {
-			return nil, err
-		}
-		project.Metadata.CreatedTs = timestamppb.New(time.Unix(createdTs, 0))
-		project.Metadata.UpdatedTs = timestamppb.New(time.Unix(updatedTs, 0))
-		projects = append(projects, project)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-*/
 	return projects, nil
 }
 
 func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (*proto.Project, error) {
 	name := strings.TrimSpace(project.Name)
-  rows, err := p.queries.GetProjectByName(ctx, name)
-  if err != nil{
-    return nil, err
+  _, err := p.queries.GetProjectByName(ctx, name)
+  if err == nil {
+    return nil, errors.New("Project with the given name already exists")
   }
-  //@TODO Check the log for a row that doesn't exist
-  fmt.Println(rows)
-  //@TODO write the rest of the logic
-  /*
-	rows, err := p.db.Query("SELECT * FROM project WHERE name = $1", name)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return nil, errors.New("Project with the given name exists")
-	}
-
-	desc := strings.TrimSpace(project.Description)
-	createdTs := timeutils.ProtobufTimestampToUnix(project.Metadata.CreatedTs)
-	updatedTs := timeutils.ProtobufTimestampToUnix(project.Metadata.UpdatedTs)
-	_, err = p.db.Exec("INSERT INTO project(name, desc, created_ts, updated_ts) VALUES($1, $2, $3, $4)", name, desc, createdTs, updatedTs)
-	if err != nil {
-		return nil, err
-	}
-  */
-	return nil, nil
+  if err == sql.ErrNoRows{
+    desc := sql.NullString{String: strings.TrimSpace(project.Description)}
+    createdTs := timeutils.ProtobufTimestampToUnix(project.Metadata.CreatedTs)
+    updatedTs := timeutils.ProtobufTimestampToUnix(project.Metadata.UpdatedTs)
+    err := p.queries.CreateProject(ctx, queries.CreateProjectParams{Name: name, Desc: desc, CreatedTs: createdTs, UpdatedTs: updatedTs})
+    if err != nil {
+      return nil, err
+    }
+    return project, nil
+  }
+  return nil, err
 }
 
 func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) {
@@ -217,27 +174,6 @@ func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) 
     }
     projects = append(projects, project)
   }  
-  /*
-	rows, err := p.db.Query("SELECT * FROM project")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var projects []*proto.Project
-	for rows.Next() {
-		project := &proto.Project{Metadata: &proto.Metadata{}}
-		var createdTsUnix int64
-		var updatedTsUnix int64
-		err := rows.Scan(&project.Id, &project.Name, &project.Description, &createdTsUnix, &updatedTsUnix)
-		if err != nil {
-			return nil, nil
-		}
-		project.Metadata.CreatedTs = timestamppb.New(time.Unix(createdTsUnix, 0))
-		project.Metadata.UpdatedTs = timestamppb.New(time.Unix(updatedTsUnix, 0))
-		projects = append(projects, project)
-	}
-  */
 	return projects, nil
 }
 

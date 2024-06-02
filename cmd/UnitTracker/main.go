@@ -11,6 +11,7 @@ import (
 	"rg/UnitTracker/store/sqlite"
 
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const port = 50051
@@ -97,27 +98,20 @@ func main() {
 func testSqliteFns(ctx context.Context, store store.Store) {
 
 	s := &serverImpl{db: store}
-	projectIds := make([]int64, 0)
-	projectIds = append(projectIds, 1)
-	projectIds = append(projectIds, 2)
-	projectIds = append(projectIds, 3)
-	projectIds = append(projectIds, 4)
-	/*
-		projects, err := s.GetProject(ctx, &proto.GetProjectRequest{ProjectIds: projectIds})
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println("==============PROJECTS=============")
-		fmt.Println(projects)
-		fmt.Println("===========================")
-	*/
-	units, err := s.GetUnits(ctx, &proto.GetUnitsRequest{ProjectIds: projectIds})
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("==============UNITS=============")
-	fmt.Println(units)
-	fmt.Println("===========================")
+
+  project := &proto.Project{
+    Name: "Marathon",
+    Description: "",
+    Metadata: &proto.Metadata{
+      CreatedTs: timestamppb.Now(),
+      UpdatedTs: timestamppb.Now(),
+    },
+  }
+  resp, err := s.CreateProject(ctx, &proto.CreateProjectRequest{Project: project})
+  if err != nil {
+    fmt.Println("Encountered an error")
+  }
+  fmt.Println(resp)
 }
 
 func runServer() {
@@ -128,7 +122,8 @@ func runServer() {
 		log.Fatalf("failed to connect to store: %v", err)
 	}
 
-	testSqliteFns(ctx, store)
+
+  testSqliteFns(ctx, store)
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
