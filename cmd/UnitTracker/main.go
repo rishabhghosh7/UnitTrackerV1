@@ -99,19 +99,19 @@ func testSqliteFns(ctx context.Context, store store.Store) {
 
 	s := &serverImpl{db: store}
 
-  project := &proto.Project{
-    Name: "Marathon",
-    Description: "",
-    Metadata: &proto.Metadata{
-      CreatedTs: timestamppb.Now(),
-      UpdatedTs: timestamppb.Now(),
-    },
-  }
-  resp, err := s.CreateProject(ctx, &proto.CreateProjectRequest{Project: project})
-  if err != nil {
-    fmt.Println("Encountered an error")
-  }
-  fmt.Println(resp)
+	project := &proto.Project{
+		Name:        "Marathon",
+		Description: "",
+		Metadata: &proto.Metadata{
+			CreatedTs: timestamppb.Now(),
+			UpdatedTs: timestamppb.Now(),
+		},
+	}
+	resp, err := s.CreateProject(ctx, &proto.CreateProjectRequest{Project: project})
+	if err != nil {
+		fmt.Println("Encountered an error")
+	}
+	fmt.Println(resp)
 }
 
 func runServer() {
@@ -122,8 +122,7 @@ func runServer() {
 		log.Fatalf("failed to connect to store: %v", err)
 	}
 
-
-  testSqliteFns(ctx, store)
+	testSqliteFns(ctx, store)
 
 	// setup server
 	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
