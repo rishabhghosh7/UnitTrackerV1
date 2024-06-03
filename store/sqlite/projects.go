@@ -57,7 +57,10 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 	}
 
 	desc := strings.TrimSpace(project.Description)
+	// THIS LINE CRASHES
 	_, err = p.db.Exec("INSERT INTO project(name, desc, created_ts, updated_ts) VALUES($1, $2, $3, $4)", name, desc, project.Metadata.CreatedTs, project.Metadata.UpdatedTs)
+
+	// _, err = p.db.Exec("INSERT INTO project(name, desc) VALUES($1, $2)", name, desc)
 	if err != nil {
 		return nil, err
 	}

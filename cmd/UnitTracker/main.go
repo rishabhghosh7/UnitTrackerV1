@@ -92,7 +92,9 @@ func unitFunction(ctx context.Context, store store.Store) {
 }
 
 func runServer() {
-	ctx := context.TODO()
+	ctx := context.Background()
+	var err error
+
 	// get store
 	store, err := sqlite.NewSqliteConnector().Connect(ctx)
 	if err != nil {

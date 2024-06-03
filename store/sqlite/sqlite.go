@@ -12,32 +12,60 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-const dbFilepath = "./store/sqlite/_sqlite.db"
-const testDbFilepath = "./store/sqlite/_testSqlite.db"
-const migrationDir = "./store/migrations/"
+const testDbFilepath = "./_testSqlite.db"
+const testMigrationDir = "../migrations/"
 
-var dbSingleton *sql.DB
+const mainDbFilepath = "./store/sqlite/_sqlite.db"
+const mainMigrationDir = "./store/migrations/"
 
 type sqliteConnector struct {
 	db *sql.DB // never access this directly
+}
+
+type testSqliteConnector struct {
+	db *sql.DB // never access this directly
+	store.Store
 }
 
 func NewSqliteConnector() store.Connecter {
 	return &sqliteConnector{}
 }
 
-// @TODO
-// func RunTransaction(store, func(trancsaction) {}) error
+func NewTestSqliteConnector() store.Connecter {
+	return &testSqliteConnector{}
+}
 
-func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
-	if dbSingleton == nil {
+func (c *testSqliteConnector) Connect(ctx context.Context) (store.Store, error) {
+	if c.db == nil {
 		var err error
-		dbSingleton, err = initDb(ctx, dbFilepath)
+		c.db, err = initDb(ctx, testDbFilepath, testMigrationDir)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return &sqliteConnector{db: dbSingleton}, nil
+	return c, nil
+}
+
+func (c *testSqliteConnector) ProjectStore() store.ProjectStore {
+	return &projectDb{db: c.db}
+}
+
+func (c *testSqliteConnector) UnitStore() store.UnitStore {
+	return &unitDb{db: c.db}
+}
+
+// @TODO
+// func RunTransaction(store, func(trancsaction) {}) error
+
+func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
+	if c.db == nil {
+		var err error
+		c.db, err = initDb(ctx, mainDbFilepath, mainMigrationDir)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return c, nil
 }
 
 func (c *sqliteConnector) ProjectStore() store.ProjectStore {
@@ -50,11 +78,11 @@ func (c *sqliteConnector) UnitStore() store.UnitStore {
 
 // =========================== UTIL FUNCS ===============================
 
-func initDb(ctx context.Context, dbFile string) (*sql.DB, error) {
+func initDb(ctx context.Context, dbFile string, migrationDir string) (*sql.DB, error) {
 	if !fsutils.FileExists(dbFile) {
-		log.Printf("Db not found, creating %s...", dbFilepath)
+		log.Printf("Db not found, creating %s...", dbFile)
 	}
-	db, err := sql.Open("sqlite3", dbFilepath)
+	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
