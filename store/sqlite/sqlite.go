@@ -153,6 +153,20 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 	return nil, err
 }
 
+func (p *projectDb) UpdateProject(ctx context.Context, in *proto.Project) (*proto.Project, error) {
+	name := strings.TrimSpace(in.Name)
+	_, err := p.queries.GetProjectByName(ctx, name)
+	if err == nil {
+		return nil, errors.New("Project with the given name already exists")
+	}
+	desc := sql.NullString{String: strings.TrimSpace(in.Description)}
+  err = p.queries.UpdateProject(ctx, queries.UpdateProjectParams{ID: in.Id, Desc: desc})
+	if err != nil {
+		return nil, err
+	}
+	return in, nil
+}
+
 func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) {
 	var projects []*proto.Project
 	rows, err := p.queries.ListProjects(ctx)

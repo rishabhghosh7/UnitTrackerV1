@@ -91,7 +91,7 @@ func (q *Queries) GetProject(ctx context.Context, ids []int64) ([]Project, error
 }
 
 const getProjectByName = `-- name: GetProjectByName :one
-SELECT id, name, desc, created_ts, updated_ts FROM Project WHERE name = ?
+SELECT id, name, desc, created_ts, updated_ts FROM Project WHERE name=?
 `
 
 func (q *Queries) GetProjectByName(ctx context.Context, name string) (Project, error) {
@@ -180,4 +180,18 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateProject = `-- name: UpdateProject :exec
+UPDATE Project SET desc = ? WHERE id = ?
+`
+
+type UpdateProjectParams struct {
+	Desc sql.NullString
+	ID   int64
+}
+
+func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) error {
+	_, err := q.db.ExecContext(ctx, updateProject, arg.Desc, arg.ID)
+	return err
 }
