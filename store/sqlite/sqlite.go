@@ -160,7 +160,7 @@ func (p *projectDb) UpdateProject(ctx context.Context, in *proto.Project) (*prot
 		return nil, errors.New("Project with the given name already exists")
 	}
 	desc := sql.NullString{String: strings.TrimSpace(in.Description)}
-  err = p.queries.UpdateProject(ctx, queries.UpdateProjectParams{ID: in.Id, Desc: desc})
+	err = p.queries.UpdateProject(ctx, queries.UpdateProjectParams{ID: in.Id, Desc: desc})
 	if err != nil {
 		return nil, err
 	}
