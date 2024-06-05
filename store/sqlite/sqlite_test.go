@@ -9,6 +9,7 @@ import (
 	"rg/UnitTracker/store/sqlite"
 	"testing"
 
+	google_proto "github.com/golang/protobuf/proto"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 )
@@ -18,24 +19,61 @@ var db store.Store
 func TestMain(m *testing.M) {
 	testStore, err := sqlite.NewTestSqliteConnector().Connect(context.TODO())
 	if err != nil {
-		dir, _ := os.Getwd()
-		fmt.Printf("%s could not get db at %s", err, dir)
+		fmt.Printf("could not get db :%s\n", err)
 		os.Exit(1)
 	}
 	db = testStore
 	os.Exit(m.Run())
 }
 
-func TestProjectsCRUD(t *testing.T) {
+func TestProjectCRUD(t *testing.T) {
 	ctx := context.Background()
-	// var err error
-
 	require.NotNil(t, db)
-	pdb := db.ProjectStore()
-	require.NotNil(t, pdb)
 
-	pdb.GetProject(ctx, []int32{1})
-	pdb.CreateProject(ctx, &proto.Project{})
+	// Test that we are able to create projects
+
+	// var err error
+	projectStore := db.ProjectStore()
+	require.NotNil(t, projectStore)
+
+	testCases := []struct {
+		// name    string
+		project *proto.Project
+	}{
+		{project: &proto.Project{
+			Name:        "N",
+			Description: "Valid Desc",
+		}},
+		{project: &proto.Project{
+			Name:        "Valid Name",
+			Description: "",
+		}},
+		{project: &proto.Project{
+			Name:        "Valid Name",
+			Description: "Valid Desc",
+		}},
+	}
+
+	for _, testCase := range testCases {
+		projectFromCreate, err := projectStore.CreateProject(ctx, testCase.project)
+		if err != nil {
+			t.Fatalf("could not create project :%s \n", err)
+		}
+		projectsFromStore, err := projectStore.GetProject(ctx, []int32{projectFromCreate.Id})
+		if err != nil {
+			t.Fatalf("could not get project :%s \n", err)
+		}
+
+		if len(projectsFromStore) != 1 {
+			t.Fatalf("expected 1 project, got %d \n", len(projectsFromStore))
+		}
+
+		if !google_proto.Equal(projectsFromStore[0], testCase.project) {
+			// @TODO : utils proto compare with diff
+			t.Fatalf("project from store not equal \nProject : %s\nProject(S) : %s\n",
+				testCase.project, projectsFromStore)
+		}
+	}
 
 	// projectNoNameNoDesc := &proto.Project{}
 	// projectNoName := &proto.Project{Description: "test desc"}
