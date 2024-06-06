@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"rg/UnitTracker/queries"
 	"rg/UnitTracker/store"
 	"rg/UnitTracker/utils/fsutils"
 
@@ -19,11 +21,13 @@ const mainDbFilepath = "./store/sqlite/_sqlite.db"
 const mainMigrationDir = "./store/migrations/"
 
 type sqliteConnector struct {
-	db *sql.DB // never access this directly
+	db      *sql.DB // never access this directly
+	queries *queries.Queries
 }
 
 type testSqliteConnector struct {
-	db *sql.DB // never access this directly
+	db      *sql.DB // never access this directly
+	queries *queries.Queries
 	store.Store
 }
 
@@ -38,7 +42,7 @@ func NewTestSqliteConnector() store.Connecter {
 func (c *testSqliteConnector) Connect(ctx context.Context) (store.Store, error) {
 	if c.db == nil {
 		var err error
-		c.db, err = initDb(ctx, testDbFilepath, testMigrationDir)
+		c.db, c.queries, err = initDb(ctx, testDbFilepath, testMigrationDir)
 		if err != nil {
 			return nil, err
 		}
@@ -46,21 +50,10 @@ func (c *testSqliteConnector) Connect(ctx context.Context) (store.Store, error) 
 	return c, nil
 }
 
-func (c *testSqliteConnector) ProjectStore() store.ProjectStore {
-	return &projectDb{db: c.db}
-}
-
-func (c *testSqliteConnector) UnitStore() store.UnitStore {
-	return &unitDb{db: c.db}
-}
-
-// @TODO
-// func RunTransaction(store, func(trancsaction) {}) error
-
 func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
 	if c.db == nil {
 		var err error
-		c.db, err = initDb(ctx, mainDbFilepath, mainMigrationDir)
+		c.db, c.queries, err = initDb(ctx, mainDbFilepath, mainMigrationDir)
 		if err != nil {
 			return nil, err
 		}
@@ -69,33 +62,43 @@ func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
 }
 
 func (c *sqliteConnector) ProjectStore() store.ProjectStore {
-	return &projectDb{db: c.db}
+	return &projectDb{db: c.db, queries: c.queries}
 }
 
 func (c *sqliteConnector) UnitStore() store.UnitStore {
-	return &unitDb{db: c.db}
+	return &unitDb{db: c.db, queries: c.queries}
 }
 
 // =========================== UTIL FUNCS ===============================
-
-func initDb(ctx context.Context, dbFile string, migrationDir string) (*sql.DB, error) {
+func initDb(ctx context.Context, dbFile string, migrationDir string) (*sql.DB, *queries.Queries, error) {
 	if !fsutils.FileExists(dbFile) {
 		log.Printf("Db not found, creating %s...", dbFile)
 	}
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %v", err)
+		return nil, nil, fmt.Errorf("failed to open database: %v", err)
 	}
 
+	queries := queries.New(db)
+
 	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %v", err)
+		return nil, nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
 
 	if err = goose.SetDialect("sqlite3"); err != nil {
-		return nil, fmt.Errorf("failed to set goose dialect: %v", err)
+		return nil, nil, fmt.Errorf("failed to set goose dialect: %v", err)
 	}
 	// run migrations
-	return migrateDb(ctx, db, migrationDir)
+	db, err = migrateDb(ctx, db, migrationDir)
+	if err != nil {
+		dir, err := os.Getwd()
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to run dir")
+		}
+		fmt.Println("printing from directory: ", dir)
+		return nil, nil, fmt.Errorf("Failed to run migrations: %v", err)
+	}
+	return db, queries, err
 }
 
 func migrateDb(ctx context.Context, db *sql.DB, migrationDir string) (*sql.DB, error) {

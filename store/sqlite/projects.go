@@ -4,87 +4,101 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"rg/UnitTracker/pkg/proto"
+	"rg/UnitTracker/queries"
+	"rg/UnitTracker/utils/timeutils"
 	"strings"
+	"time"
 )
 
 type projectDb struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *queries.Queries
 }
 
-func (p *projectDb) GetProject(ctx context.Context, projectIds []int32) ([]*proto.Project, error) {
+// ===================== PROJECT METHODS ======================
+func (p *projectDb) GetProject(ctx context.Context, projectIds []int64) ([]*proto.Project, error) {
 	if len(projectIds) == 0 {
 		return nil, errors.New("No project ids sent")
 	}
-	query := `SELECT * FROM Project WHERE id IN (` + strings.Repeat("?,", len(projectIds))
-	query = query[:len(query)-1] + `)`
-	args := make([]interface{}, len(projectIds))
-	for i, id := range projectIds {
-		args[i] = id
-	}
-	rows, err := p.db.Query(query, args[:]...)
+
+	rows, err := p.queries.GetProject(ctx, projectIds)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	projects := make([]*proto.Project, 1)
-
-	for rows.Next() {
-		project := &proto.Project{Metadata: &proto.Metadata{}}
-		if err := rows.Scan(&project.Id, &project.Name, &project.Description, &project.Metadata.CreatedTs, &project.Metadata.UpdatedTs); err != nil {
-			return nil, err
+	projects := make([]*proto.Project, 0)
+	for _, v := range rows {
+		if !v.Desc.Valid {
+			v.Desc.String = ""
+		}
+		project := &proto.Project{
+			Metadata: &proto.Metadata{
+				CreatedTs: timestamppb.New(time.Unix(v.CreatedTs, 0)),
+				UpdatedTs: timestamppb.New(time.Unix(v.UpdatedTs, 0)),
+			},
+			Id:          v.ID,
+			Name:        v.Name,
+			Description: v.Desc.String,
 		}
 		projects = append(projects, project)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
 	return projects, nil
 }
 
 func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (*proto.Project, error) {
 	name := strings.TrimSpace(project.Name)
-	rows, err := p.db.Query("SELECT * FROM project WHERE name = $1", name)
+	_, err := p.queries.GetProjectByName(ctx, name)
+	if err == nil {
+		return nil, errors.New("Project with the given name already exists")
+	}
+	if err == sql.ErrNoRows {
+		desc := sql.NullString{String: strings.TrimSpace(project.Description)}
+		createdTs := timeutils.ProtobufTimestampToUnix(project.Metadata.CreatedTs)
+		updatedTs := timeutils.ProtobufTimestampToUnix(project.Metadata.UpdatedTs)
+		err := p.queries.CreateProject(ctx, queries.CreateProjectParams{Name: name, Desc: desc, CreatedTs: createdTs, UpdatedTs: updatedTs})
+		if err != nil {
+			return nil, err
+		}
+		return project, nil
+	}
+	return nil, err
+}
+
+func (p *projectDb) UpdateProject(ctx context.Context, in *proto.Project) (*proto.Project, error) {
+	name := strings.TrimSpace(in.Name)
+	_, err := p.queries.GetProjectByName(ctx, name)
+	if err == nil {
+		return nil, errors.New("Project with the given name already exists")
+	}
+	desc := sql.NullString{String: strings.TrimSpace(in.Description)}
+	err = p.queries.UpdateProject(ctx, queries.UpdateProjectParams{ID: in.Id, Desc: desc})
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		return nil, errors.New("Project with the given name exists")
-	}
-
-	desc := strings.TrimSpace(project.Description)
-	// THIS LINE CRASHES
-	// _, err = p.db.Exec("INSERT INTO project(name, desc, created_ts, updated_ts) VALUES($1, $2, $3, $4)", name, desc, project.Metadata.CreatedTs, project.Metadata.UpdatedTs)
-
-	_, err = p.db.Exec("INSERT INTO project(name, desc) VALUES($1, $2)", name, desc)
-	if err != nil {
-		return nil, err
-	}
-	return nil, nil
+	return in, nil
 }
 
 func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) {
-	rows, err := p.db.Query("SELECT * FROM project")
+	var projects []*proto.Project
+	rows, err := p.queries.ListProjects(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var projects []*proto.Project
-	for rows.Next() {
-		var project proto.Project
-		var createdTsUnix int64
-		var updatedTsUnix int64
-		err := rows.Scan(&project.Id, &project.Name, &project.Description, &createdTsUnix, &updatedTsUnix)
-		if err != nil {
-			return nil, nil
+	for _, v := range rows {
+		if !v.Desc.Valid {
+			v.Desc.String = ""
 		}
-		// project.Metadata.CreatedTs = timestamppb.New(createdTsUnix)
-		projects = append(projects, &project)
+		project := &proto.Project{
+			Description: v.Desc.String,
+			Name:        v.Name,
+			Id:          v.ID,
+			Metadata: &proto.Metadata{
+				CreatedTs: timestamppb.New(time.Unix(v.CreatedTs, 0)),
+				UpdatedTs: timestamppb.New(time.Unix(v.UpdatedTs, 0)),
+			},
+		}
+		projects = append(projects, project)
 	}
 	return projects, nil
 }

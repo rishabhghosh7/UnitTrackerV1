@@ -3,19 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"net"
-	"time"
-
 	"rg/UnitTracker/pkg/proto"
 	"rg/UnitTracker/store"
 	"rg/UnitTracker/store/sqlite"
 	"rg/UnitTracker/svc"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/guptarohit/asciigraph"
+	// "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const port = 50051
@@ -58,37 +59,25 @@ func main() {
 	runServer()
 }
 
-func unitFunction(ctx context.Context, store store.Store) {
-	// s := &serverImpl{db: store}
-	//
-	// var i int32
-	//
-	// for {
-	// 	metadata := &proto.Metadata{
-	// 		CreatedTs: &timestamppb.Timestamp{
-	// 			Seconds: int64(time.Now().Unix()),
-	// 		}}
-	// 	unit := &proto.Unit{ProjectId: i + 1, Metadata: metadata}
-	// 	auReq := &proto.AddUnitRequest{Unit: unit}
-	// 	_, err := s.AddUnit(ctx, auReq)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// 	if i == 2 {
-	// 		break
-	// 	}
-	// 	i++
-	// }
-	//
-	// var projectIds []int32
-	// projectIds = append(projectIds, 1)
-	// projectIds = append(projectIds, 2)
-	// projectIds = append(projectIds, 3)
-	// guReq := &proto.GetUnitsRequest{ProjectIds: projectIds}
-	// _, err := s.GetUnits(ctx, guReq)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+func testSqliteFns(ctx context.Context, store store.Store) {
+
+	/*
+		s := &serverImpl{db: store}
+
+		project := &proto.Project{
+			Name:        "Marathon",
+			Description: "",
+			Metadata: &proto.Metadata{
+				CreatedTs: timestamppb.Now(),
+				UpdatedTs: timestamppb.Now(),
+			},
+		}
+		resp, err := s.CreateProject(ctx, &proto.CreateProjectRequest{Project: project})
+		if err != nil {
+			fmt.Println("Encountered an error")
+		}
+		fmt.Println(resp)
+	*/
 }
 
 func runServer() {
@@ -96,9 +85,23 @@ func runServer() {
 	var err error
 
 	// get store
-	store, err := sqlite.NewSqliteConnector().Connect(ctx)
+	store, err := sqlite.NewTestSqliteConnector().Connect(ctx)
 	if err != nil {
 		log.Fatalf("failed to connect to store: %v", err)
+	}
+
+	projectStore := store.ProjectStore()
+	project := &proto.Project{
+		Name:        "blah",
+		Description: "blah blah",
+		Metadata: &proto.Metadata{
+			CreatedTs: timestamppb.Now(),
+			UpdatedTs: timestamppb.Now(),
+		},
+	}
+	_, err = projectStore.CreateProject(ctx, project)
+	if err != nil {
+		log.Fatal("failed to connect to store: ", err)
 	}
 
 	// setup server

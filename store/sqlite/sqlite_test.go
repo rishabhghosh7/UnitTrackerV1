@@ -59,7 +59,7 @@ func TestProjectCRUD(t *testing.T) {
 		if err != nil {
 			t.Fatalf("could not create project :%s \n", err)
 		}
-		projectsFromStore, err := projectStore.GetProject(ctx, []int32{projectFromCreate.Id})
+		projectsFromStore, err := projectStore.GetProject(ctx, []int64{projectFromCreate.Id})
 		if err != nil {
 			t.Fatalf("could not get project :%s \n", err)
 		}
