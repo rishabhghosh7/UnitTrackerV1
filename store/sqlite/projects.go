@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"rg/UnitTracker/pkg/proto"
 	"rg/UnitTracker/queries"
+	"rg/UnitTracker/utils/sliceutils"
 	"rg/UnitTracker/utils/timeutils"
 	"strings"
 	"time"
@@ -19,32 +21,71 @@ type projectDb struct {
 }
 
 // ===================== PROJECT METHODS ======================
+
+func ProjectModelToProto(project *queries.Project) *proto.Project {
+	if project == nil {
+		return nil
+	}
+
+	return &proto.Project{
+		Id:          project.ID,
+		Name:        project.Name,
+		Description: project.Desc.String,
+		// @TODO : metadata
+	}
+}
+
+func ProjectProtoToModel(project *proto.Project) *queries.Project {
+	if project == nil {
+		return nil
+	}
+
+	return &queries.Project{
+		ID:   project.Id,
+		Name: project.Name,
+		Desc: sql.NullString{String: project.Description, Valid: true},
+		// @TODO : metadata
+	}
+}
+
 func (p *projectDb) GetProject(ctx context.Context, projectIds []int64) ([]*proto.Project, error) {
 	if len(projectIds) == 0 {
-		return nil, errors.New("No project ids sent")
+		return []*proto.Project{}, nil
 	}
+
+	// rows, err := p.queries.GetProject(ctx, projectIds)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// projects := make([]*proto.Project, 0)
+	// for _, v := range rows {
+	// 	if !v.Desc.Valid {
+	// 		v.Desc.String = ""
+	// 	}
+	// 	project := &proto.Project{
+	// 		Metadata: &proto.Metadata{
+	// 			CreatedTs: timestamppb.New(time.Unix(v.CreatedTs, 0)),
+	// 			UpdatedTs: timestamppb.New(time.Unix(v.UpdatedTs, 0)),
+	// 		},
+	// 		Id:          v.ID,
+	// 		Name:        v.Name,
+	// 		Description: v.Desc.String,
+	// 	}
+	// 	projects = append(projects, project)
+	// }
+	// return projects, nil
 
 	rows, err := p.queries.GetProject(ctx, projectIds)
 	if err != nil {
 		return nil, err
 	}
-	projects := make([]*proto.Project, 0)
-	for _, v := range rows {
-		if !v.Desc.Valid {
-			v.Desc.String = ""
-		}
-		project := &proto.Project{
-			Metadata: &proto.Metadata{
-				CreatedTs: timestamppb.New(time.Unix(v.CreatedTs, 0)),
-				UpdatedTs: timestamppb.New(time.Unix(v.UpdatedTs, 0)),
-			},
-			Id:          v.ID,
-			Name:        v.Name,
-			Description: v.Desc.String,
-		}
-		projects = append(projects, project)
-	}
-	return projects, nil
+	fmt.Printf("db %d rows \n", len(rows))
+	protoRows := sliceutils.Map(rows, func(p queries.Project) *proto.Project {
+		return ProjectModelToProto(&p)
+	})
+
+	fmt.Printf("returning %d rows \n", len(protoRows))
+	return protoRows, nil
 }
 
 func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (*proto.Project, error) {
