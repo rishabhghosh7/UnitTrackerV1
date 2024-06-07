@@ -4,14 +4,14 @@ SELECT id, name, desc, created_ts, updated_ts FROM Project WHERE id IN (sqlc.sli
 -- name: GetProjectByName :one
 SELECT id, name, desc, created_ts, updated_ts FROM Project WHERE name=?;
 
--- name: CreateProject :exec
-INSERT INTO Project(name, desc, created_ts, updated_ts) VALUES(?, ?, ?, ?);
+-- name: CreateProject :one
+INSERT INTO Project(name, desc, created_ts, updated_ts) VALUES(?, ?, ?, ?) RETURNING id, name, desc, created_ts, updated_ts;
 
 -- name: ListProjects :many
 SELECT id, name, desc, created_ts, updated_ts FROM Project;
 
--- name: UpdateProject :exec
-UPDATE Project SET desc = ? WHERE id = ?;
+-- name: UpdateProject :one
+UPDATE Project SET desc = ? WHERE id = ? RETURNING id, name, desc, created_ts, updated_ts;
 
 -- name: AddUnit :exec
 INSERT INTO Unit(project_id, created_ts, updated_ts) VALUES(?, ?, ?);

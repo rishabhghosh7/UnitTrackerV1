@@ -26,8 +26,8 @@ func (q *Queries) AddUnit(ctx context.Context, arg AddUnitParams) error {
 	return err
 }
 
-const createProject = `-- name: CreateProject :exec
-INSERT INTO Project(name, desc, created_ts, updated_ts) VALUES(?, ?, ?, ?)
+const createProject = `-- name: CreateProject :one
+INSERT INTO Project(name, desc, created_ts, updated_ts) VALUES(?, ?, ?, ?) RETURNING id, name, desc, created_ts, updated_ts
 `
 
 type CreateProjectParams struct {
@@ -37,14 +37,22 @@ type CreateProjectParams struct {
 	UpdatedTs int64
 }
 
-func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) error {
-	_, err := q.db.ExecContext(ctx, createProject,
+func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
+	row := q.db.QueryRowContext(ctx, createProject,
 		arg.Name,
 		arg.Desc,
 		arg.CreatedTs,
 		arg.UpdatedTs,
 	)
-	return err
+	var i Project
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Desc,
+		&i.CreatedTs,
+		&i.UpdatedTs,
+	)
+	return i, err
 }
 
 const getProject = `-- name: GetProject :many
@@ -182,8 +190,8 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 	return items, nil
 }
 
-const updateProject = `-- name: UpdateProject :exec
-UPDATE Project SET desc = ? WHERE id = ?
+const updateProject = `-- name: UpdateProject :one
+UPDATE Project SET desc = ? WHERE id = ? RETURNING id, name, desc, created_ts, updated_ts
 `
 
 type UpdateProjectParams struct {
@@ -191,7 +199,15 @@ type UpdateProjectParams struct {
 	ID   int64
 }
 
-func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) error {
-	_, err := q.db.ExecContext(ctx, updateProject, arg.Desc, arg.ID)
-	return err
+func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
+	row := q.db.QueryRowContext(ctx, updateProject, arg.Desc, arg.ID)
+	var i Project
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Desc,
+		&i.CreatedTs,
+		&i.UpdatedTs,
+	)
+	return i, err
 }

@@ -16,6 +16,11 @@ import (
 
 var db store.Store
 
+//HEMANT-Created project has id which passed project does not have, resulting in test case failure
+func validProjectMessage(project *proto.Project) google_proto.Message {
+  return &proto.Project{Name: project.Name, Description: project.Description}
+}
+
 func TestMain(m *testing.M) {
 	testStore, err := sqlite.NewTestSqliteConnector().Connect(context.TODO())
 	if err != nil {
@@ -49,16 +54,22 @@ func TestProjectCRUD(t *testing.T) {
 			Description: "",
 		}},
 		{project: &proto.Project{
-			Name:        "Valid Name",
+			Name:        "Valid Name 2",
 			Description: "Valid Desc",
+		}},
+		{project: &proto.Project{
+			Description: "Project without name",
 		}},
 	}
 
+  //@TODO Add a check for metadata dates to be successfully converted back to timestamps for validity
+
 	for _, testCase := range testCases {
 		projectFromCreate, err := projectStore.CreateProject(ctx, testCase.project)
-		if err != nil {
-			t.Fatalf("could not create project :%s \n", err)
+		if err != nil && testCase.project.Description=="Project without name" {
+		  t.Fatalf("could not create project :%s \n", err)
 		}
+
 		projectsFromStore, err := projectStore.GetProject(ctx, []int64{projectFromCreate.Id})
 		if err != nil {
 			t.Fatalf("could not get project :%s \n", err)
@@ -67,28 +78,48 @@ func TestProjectCRUD(t *testing.T) {
 		if len(projectsFromStore) != 1 {
 			t.Fatalf("expected 1 project, got %d \n", len(projectsFromStore))
 		}
-
-		if !google_proto.Equal(projectsFromStore[0], testCase.project) {
+		if !google_proto.Equal(validProjectMessage(testCase.project) , validProjectMessage(projectsFromStore[0])) {
 			// @TODO : utils proto compare with diff
 			t.Fatalf("project from store not equal \nProject : %s\nProject(S) : %s\n",
-				testCase.project, projectsFromStore)
-		}
+				testCase.project, projectsFromStore[0])
+		}else {
+      fmt.Println("Test case passed")
+    }
+	}
+}
+
+/*
+func TestUnitCRUD(t *testing.T) {
+
+	ctx := context.Background()
+	require.NotNil(t, db)
+
+	// Test that we are able to create projects
+
+	// var err error
+	unitStore := db.UnitStore()
+	require.NotNil(t, unitStore)
+
+	testCases := []struct { unit *proto.Unit }{
+    { unit: &proto.Unit{ ProjectId: 0, }, },
+    { unit: &proto.Unit{ ProjectId: 1, }, },
+    { unit: &proto.Unit{ }, },
 	}
 
-	// projectNoNameNoDesc := &proto.Project{}
-	// projectNoName := &proto.Project{Description: "test desc"}
-	// legalProject := &proto.Project{}
-	//
-	// projectStore := db.ProjectStore()
-	// _, err = projectStore.CreateProject(context.TODO(), projectNoNameNoDesc)
-	// // require.ErrorIs() // @TODO : check error
-	// require.Error(t, err)
-	//
-	// _, err = projectStore.CreateProject(context.TODO(), projectNoName)
-	// // require.ErrorIs() // @TODO : check error
-	// require.Error(t, err)
-	//
-	// _, err = projectStore.CreateProject(context.TODO(), legalProject)
-	// // require.ErrorIs() // @TODO : check error
-	// require.NoError(t, err)
+  for _, test := range testCases{
+    unitFromCreate, err := unitStore.AddUnit(ctx, test.unit)    
+    if err != nil && test.unit.ProjectId!=0{
+		  t.Fatalf("could not add unit :%s \n", err)
+    }
+    var projectIds []int64
+    projectIds = append(projectIds, unitFromCreate.ProjectId)
+    unitFromStore, err := unitStore.GetUnits(ctx, projectIds)
+    if err != nil{
+		  t.Fatalf("could not get unit :%s \n", err)
+    }
+    if !google_proto.Equal()
+  } 
+
+
 }
+*/

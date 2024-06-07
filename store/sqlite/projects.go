@@ -53,28 +53,6 @@ func (p *projectDb) GetProject(ctx context.Context, projectIds []int64) ([]*prot
 		return []*proto.Project{}, nil
 	}
 
-	// rows, err := p.queries.GetProject(ctx, projectIds)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// projects := make([]*proto.Project, 0)
-	// for _, v := range rows {
-	// 	if !v.Desc.Valid {
-	// 		v.Desc.String = ""
-	// 	}
-	// 	project := &proto.Project{
-	// 		Metadata: &proto.Metadata{
-	// 			CreatedTs: timestamppb.New(time.Unix(v.CreatedTs, 0)),
-	// 			UpdatedTs: timestamppb.New(time.Unix(v.UpdatedTs, 0)),
-	// 		},
-	// 		Id:          v.ID,
-	// 		Name:        v.Name,
-	// 		Description: v.Desc.String,
-	// 	}
-	// 	projects = append(projects, project)
-	// }
-	// return projects, nil
-
 	rows, err := p.queries.GetProject(ctx, projectIds)
 	if err != nil {
 		return nil, err
@@ -95,14 +73,20 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 		return nil, errors.New("Project with the given name already exists")
 	}
 	if err == sql.ErrNoRows {
-		desc := sql.NullString{String: strings.TrimSpace(project.Description)}
+    trimmedDesc := strings.TrimSpace(project.Description)
+		desc := sql.NullString{String: trimmedDesc, Valid: true}
 		createdTs := timeutils.ProtobufTimestampToUnix(project.GetMetadata().GetCreatedTs())
 		updatedTs := timeutils.ProtobufTimestampToUnix(project.GetMetadata().GetUpdatedTs())
-		err := p.queries.CreateProject(ctx, queries.CreateProjectParams{Name: name, Desc: desc, CreatedTs: createdTs, UpdatedTs: updatedTs})
+		row, err := p.queries.CreateProject(ctx, queries.CreateProjectParams{Name: name, Desc: desc, CreatedTs: createdTs, UpdatedTs: updatedTs})
 		if err != nil {
 			return nil, err
 		}
-		return project, nil
+    var projects []queries.Project
+    projects = append(projects, row)
+    protoRows := sliceutils.Map(projects, func(p queries.Project) *proto.Project {
+      return ProjectModelToProto(&p)
+    })
+		return protoRows[0], nil
 	}
 	return nil, err
 }
@@ -114,11 +98,16 @@ func (p *projectDb) UpdateProject(ctx context.Context, in *proto.Project) (*prot
 		return nil, errors.New("Project with the given name already exists")
 	}
 	desc := sql.NullString{String: strings.TrimSpace(in.Description)}
-	err = p.queries.UpdateProject(ctx, queries.UpdateProjectParams{ID: in.Id, Desc: desc})
-	if err != nil {
-		return nil, err
-	}
-	return in, nil
+  row, err := p.queries.UpdateProject(ctx, queries.UpdateProjectParams{ID: in.Id, Desc: desc})
+  if err != nil {
+    return nil, err
+  }
+  var projects []queries.Project
+  projects = append(projects, row)
+  protoRows := sliceutils.Map(projects, func(p queries.Project) *proto.Project {
+    return ProjectModelToProto(&p)
+  })
+	return protoRows[0], nil
 }
 
 func (p *projectDb) ListProjects(ctx context.Context) ([]*proto.Project, error) {
