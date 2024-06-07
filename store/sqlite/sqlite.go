@@ -28,7 +28,7 @@ type sqliteConnector struct {
 type testSqliteConnector struct {
 	db      *sql.DB // never access this directly
 	queries *queries.Queries
-	store.Store
+	// store.Store
 }
 
 func NewSqliteConnector() store.Connecter {
@@ -59,6 +59,14 @@ func (c *sqliteConnector) Connect(ctx context.Context) (store.Store, error) {
 		}
 	}
 	return c, nil
+}
+
+func (c *testSqliteConnector) ProjectStore() store.ProjectStore {
+	return &projectDb{db: c.db, queries: c.queries}
+}
+
+func (c *testSqliteConnector) UnitStore() store.UnitStore {
+	return &unitDb{db: c.db, queries: c.queries}
 }
 
 func (c *sqliteConnector) ProjectStore() store.ProjectStore {

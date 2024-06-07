@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"rg/UnitTracker/pkg/proto"
 	"rg/UnitTracker/queries"
 	"rg/UnitTracker/utils/timeutils"
 	"strings"
 	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type projectDb struct {
@@ -54,8 +55,8 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 	}
 	if err == sql.ErrNoRows {
 		desc := sql.NullString{String: strings.TrimSpace(project.Description)}
-		createdTs := timeutils.ProtobufTimestampToUnix(project.Metadata.CreatedTs)
-		updatedTs := timeutils.ProtobufTimestampToUnix(project.Metadata.UpdatedTs)
+		createdTs := timeutils.ProtobufTimestampToUnix(project.GetMetadata().GetCreatedTs())
+		updatedTs := timeutils.ProtobufTimestampToUnix(project.GetMetadata().GetUpdatedTs())
 		err := p.queries.CreateProject(ctx, queries.CreateProjectParams{Name: name, Desc: desc, CreatedTs: createdTs, UpdatedTs: updatedTs})
 		if err != nil {
 			return nil, err
