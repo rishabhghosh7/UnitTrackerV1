@@ -54,25 +54,27 @@ func TestProjectCRUD(t *testing.T) {
 		}},
 	}
 
-	for _, testCase := range testCases {
-		projectFromCreate, err := projectStore.CreateProject(ctx, testCase.project)
-		if err != nil {
-			t.Fatalf("could not create project :%s \n", err)
-		}
-		projectsFromStore, err := projectStore.GetProject(ctx, []int32{projectFromCreate.Id})
-		if err != nil {
-			t.Fatalf("could not get project :%s \n", err)
-		}
+	for i, testCase := range testCases {
+		t.Run(fmt.Sprintf("test %d", i), func(t *testing.T) {
+			projectFromCreate, err := projectStore.CreateProject(ctx, testCase.project)
+			if err != nil {
+				t.Fatalf("could not create project :%s \n", err)
+			}
+			projectsFromStore, err := projectStore.GetProject(ctx, []int32{projectFromCreate.Id})
+			if err != nil {
+				t.Fatalf("could not get project :%s \n", err)
+			}
 
-		if len(projectsFromStore) != 1 {
-			t.Fatalf("expected 1 project, got %d \n", len(projectsFromStore))
-		}
+			if len(projectsFromStore) != 1 {
+				t.Fatalf("expected 1 project, got %d \n", len(projectsFromStore))
+			}
 
-		if !google_proto.Equal(projectsFromStore[0], testCase.project) {
-			// @TODO : utils proto compare with diff
-			t.Fatalf("project from store not equal \nProject : %s\nProject(S) : %s\n",
-				testCase.project, projectsFromStore)
-		}
+			if !google_proto.Equal(projectsFromStore[0], testCase.project) {
+				// @TODO : utils proto compare with diff
+				t.Fatalf("project from store not equal \nProject : %s\nProject(S) : %s\n",
+					testCase.project, projectsFromStore)
+			}
+		})
 	}
 
 	// projectNoNameNoDesc := &proto.Project{}
