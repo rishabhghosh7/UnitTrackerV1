@@ -73,7 +73,7 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 		return nil, errors.New("Project with the given name already exists")
 	}
 	if err == sql.ErrNoRows {
-    trimmedDesc := strings.TrimSpace(project.Description)
+		trimmedDesc := strings.TrimSpace(project.Description)
 		desc := sql.NullString{String: trimmedDesc, Valid: true}
 		createdTs := timeutils.ProtobufTimestampToUnix(project.GetMetadata().GetCreatedTs())
 		updatedTs := timeutils.ProtobufTimestampToUnix(project.GetMetadata().GetUpdatedTs())
@@ -81,11 +81,11 @@ func (p *projectDb) CreateProject(ctx context.Context, project *proto.Project) (
 		if err != nil {
 			return nil, err
 		}
-    var projects []queries.Project
-    projects = append(projects, row)
-    protoRows := sliceutils.Map(projects, func(p queries.Project) *proto.Project {
-      return ProjectModelToProto(&p)
-    })
+		var projects []queries.Project
+		projects = append(projects, row)
+		protoRows := sliceutils.Map(projects, func(p queries.Project) *proto.Project {
+			return ProjectModelToProto(&p)
+		})
 		return protoRows[0], nil
 	}
 	return nil, err
@@ -98,15 +98,15 @@ func (p *projectDb) UpdateProject(ctx context.Context, in *proto.Project) (*prot
 		return nil, errors.New("Project with the given name already exists")
 	}
 	desc := sql.NullString{String: strings.TrimSpace(in.Description)}
-  row, err := p.queries.UpdateProject(ctx, queries.UpdateProjectParams{ID: in.Id, Desc: desc})
-  if err != nil {
-    return nil, err
-  }
-  var projects []queries.Project
-  projects = append(projects, row)
-  protoRows := sliceutils.Map(projects, func(p queries.Project) *proto.Project {
-    return ProjectModelToProto(&p)
-  })
+	row, err := p.queries.UpdateProject(ctx, queries.UpdateProjectParams{ID: in.Id, Desc: desc})
+	if err != nil {
+		return nil, err
+	}
+	var projects []queries.Project
+	projects = append(projects, row)
+	protoRows := sliceutils.Map(projects, func(p queries.Project) *proto.Project {
+		return ProjectModelToProto(&p)
+	})
 	return protoRows[0], nil
 }
 

@@ -16,9 +16,9 @@ import (
 
 var db store.Store
 
-//HEMANT-Created project has id which passed project does not have, resulting in test case failure
+// HEMANT-Created project has id which passed project does not have, resulting in test case failure
 func validProjectMessage(project *proto.Project) google_proto.Message {
-  return &proto.Project{Name: project.Name, Description: project.Description}
+	return &proto.Project{Name: project.Name, Description: project.Description}
 }
 
 func TestMain(m *testing.M) {
@@ -62,12 +62,12 @@ func TestProjectCRUD(t *testing.T) {
 		}},
 	}
 
-  //@TODO Add a check for metadata dates to be successfully converted back to timestamps for validity
+	//@TODO Add a check for metadata dates to be successfully converted back to timestamps for validity
 
 	for _, testCase := range testCases {
 		projectFromCreate, err := projectStore.CreateProject(ctx, testCase.project)
-		if err != nil && testCase.project.Description=="Project without name" {
-		  t.Fatalf("could not create project :%s \n", err)
+		if err != nil && testCase.project.Description == "Project without name" {
+			t.Fatalf("could not create project :%s \n", err)
 		}
 
 		projectsFromStore, err := projectStore.GetProject(ctx, []int64{projectFromCreate.Id})
@@ -78,13 +78,13 @@ func TestProjectCRUD(t *testing.T) {
 		if len(projectsFromStore) != 1 {
 			t.Fatalf("expected 1 project, got %d \n", len(projectsFromStore))
 		}
-		if !google_proto.Equal(validProjectMessage(testCase.project) , validProjectMessage(projectsFromStore[0])) {
+		if !google_proto.Equal(validProjectMessage(testCase.project), validProjectMessage(projectsFromStore[0])) {
 			// @TODO : utils proto compare with diff
 			t.Fatalf("project from store not equal \nProject : %s\nProject(S) : %s\n",
 				testCase.project, projectsFromStore[0])
-		}else {
-      fmt.Println("Test case passed")
-    }
+		} else {
+			fmt.Println("Test case passed")
+		}
 	}
 }
 
@@ -107,7 +107,7 @@ func TestUnitCRUD(t *testing.T) {
 	}
 
   for _, test := range testCases{
-    unitFromCreate, err := unitStore.AddUnit(ctx, test.unit)    
+    unitFromCreate, err := unitStore.AddUnit(ctx, test.unit)
     if err != nil && test.unit.ProjectId!=0{
 		  t.Fatalf("could not add unit :%s \n", err)
     }
@@ -118,7 +118,7 @@ func TestUnitCRUD(t *testing.T) {
 		  t.Fatalf("could not get unit :%s \n", err)
     }
     if !google_proto.Equal()
-  } 
+  }
 
 
 }
